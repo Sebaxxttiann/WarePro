@@ -1,0 +1,28 @@
+{
+  "name": "Ware-Pro - Sistema de Gestión",
+  "short_name": "Ware-Pro",
+  "description": "Sistema de Gestión de Almacén y Control de Temperaturas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#FFD700",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es",
+  "scope": "/",
+  "id": "warepro-sistema"
+}
