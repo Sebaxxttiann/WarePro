@@ -165,7 +165,6 @@ $user_nombre = $_SESSION['nombre'] ?? 'Usuario';
 
     <script>
         
-        const GOOGLE_SHEETS_URL = 'https://sheets.googleapis.com/v4/spreadsheets/1vARa8PyXHJSKXRtzTRTfstSqbmD7hRD5nigPK1KiHjQ/values/DATOS?key=AIzaSyCm-y51bdjROuJgw1ZK5SmTvEU7NuIp-VA';
         
         let allData = [];
         let fpCalendar; 
