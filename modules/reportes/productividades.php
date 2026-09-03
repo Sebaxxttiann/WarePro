@@ -196,7 +196,6 @@ $user_nombre = $_SESSION['nombre'] ?? 'Usuario';
             'Lavado': 17         
         };
 
-        const GOOGLE_SHEETS_URL = 'https://sheets.googleapis.com/v4/spreadsheets/14nmey9lC9GEe3zf9ncPDdA0-1UXyVB3r92X5rxemugU/values/CIRCUITO?key=AIzaSyCm-y51bdjROuJgw1ZK5SmTvEU7NuIp-VA';
         
         let allData = [];
         let fpCalendar; 
