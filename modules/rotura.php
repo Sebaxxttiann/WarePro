@@ -28,13 +28,7 @@ if ($_POST) {
                     mkdir($upload_dir, 0777, true);
                 }
 
-                $file_extension = pathinfo($_FILES['registro_fotografico']['name'], PATHINFO_EXTENSION);
-                $filename = 'rotura_' . date('YmdHis') . '_' . uniqid() . '.' . $file_extension;
-                $imagen_path = $upload_dir . $filename;
-
-                if (!move_uploaded_file($_FILES['registro_fotografico']['tmp_name'], $imagen_path)) {
-                    $imagen_path = null;
-                }
+                $imagen_path = guardarImagenSegura($_FILES['registro_fotografico'], $upload_dir, 'rotura');
             }
 
             $stmt = $pdo->prepare("
@@ -79,11 +73,8 @@ if ($_POST) {
                     mkdir($upload_dir, 0777, true);
                 }
 
-                $file_extension = pathinfo($_FILES['registro_fotografico']['name'], PATHINFO_EXTENSION);
-                $filename = 'rotura_' . date('YmdHis') . '_' . uniqid() . '.' . $file_extension;
-                $nueva_imagen = $upload_dir . $filename;
-
-                if (move_uploaded_file($_FILES['registro_fotografico']['tmp_name'], $nueva_imagen)) {
+                $nueva_imagen = guardarImagenSegura($_FILES['registro_fotografico'], $upload_dir, 'rotura');
+                if ($nueva_imagen) {
                     if ($imagen_path && file_exists($imagen_path)) {
                         unlink($imagen_path);
                     }

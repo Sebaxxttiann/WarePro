@@ -2,20 +2,29 @@
 require_once 'core/config.php';
 
 if (isset($_POST['action']) && $_POST['action'] == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
-    $cedula = limpiarDatos($_POST['cedula']);
-    $password = md5($_POST['password']);
+    $cedula = trim((string)($_POST['cedula'] ?? ''));
+    $passwordPlano = (string)($_POST['password'] ?? '');
     
-    $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE cedula = ? AND password = ? AND activo = 1");
-    $stmt->execute([$cedula, $password]);
+    $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE cedula = ? AND activo = 1");
+    $stmt->execute([$cedula]);
     $usuario = $stmt->fetch();
     
-    if ($usuario) {
+    if ($usuario && verificarPassword($passwordPlano, $usuario['password'])) {
+        session_regenerate_id(true);
+        $sessionToken = bin2hex(random_bytes(32));
+        $stmtSesion = $pdo->prepare('UPDATE usuarios SET session_token = ? WHERE id = ?');
+        $stmtSesion->execute([$sessionToken, $usuario['id']]);
         $_SESSION['usuario_id'] = $usuario['id'];
         $_SESSION['nombre'] = $usuario['nombre'];
         $_SESSION['cedula'] = $usuario['cedula'];
         $_SESSION['cargo'] = $usuario['cargo'];
         $_SESSION['operacion_id'] = $usuario['operacion_id'];
         $_SESSION['operacion_activa_id'] = $usuario['operacion_id'];
+        $_SESSION['session_token'] = $sessionToken;
+        if (!password_verify($passwordPlano, $usuario['password'])) {
+            $stmtActualizar = $pdo->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
+            $stmtActualizar->execute([hashPassword($passwordPlano), $usuario['id']]);
+        }
         echo json_encode(['success' => true]);
         exit();
     } else {

@@ -3,15 +3,16 @@ require_once '../../core/config.php';
 
 verificarLogin();
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'vincular') {
+    verificarCsrf();
     $cedula = limpiarDatos($_POST['cedula']);
-    $password = md5($_POST['password']); 
+    $password = (string)($_POST['password'] ?? '');
     $huella_data = $_POST['huella_binaria']; 
 
-    $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE cedula = ? AND password = ? AND activo = 1");
-    $stmt->execute([$cedula, $password]);
+    $stmt = $pdo->prepare("SELECT id, password FROM usuarios WHERE cedula = ? AND activo = 1");
+    $stmt->execute([$cedula]);
     $usuario = $stmt->fetch();
 
-    if ($usuario) {
+    if ($usuario && verificarPassword($password, $usuario['password'])) {
         
         $update = $pdo->prepare("UPDATE usuarios SET huella = ? WHERE id = ?");
         if ($update->execute([$huella_data, $usuario['id']])) {
@@ -70,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             <p style="color: #6b7280; font-size: 0.85rem; margin-bottom: 25px;">Confirma tu identidad para activar el sensor</p>
 
             <form id="huellaForm">
+                <input type="hidden" id="csrf_token" value="<?php echo htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="form-group">
                     <label>NÚMERO DE CÉDULA</label>
                     <input type="text" class="form-control" id="cedula" placeholder="Ingresa tu cédula" required>
@@ -137,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                     formData.append('action', 'vincular');
                     formData.append('cedula', cedula);
                     formData.append('password', pass);
+                    formData.append('csrf_token', document.getElementById('csrf_token').value);
                     formData.append('huella_binaria', btoa(String.fromCharCode(...new Uint8Array(credential.rawId))));
 
                     const response = await fetch('add_huella.php', { method: 'POST', body: formData });

@@ -4,6 +4,12 @@ verificarLogin();
 require_once '../../core/con_universal.php';
 header('Content-Type: application/json');
 
+/** @var PDO $pdo_warepro */
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 
 
 

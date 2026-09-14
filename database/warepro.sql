@@ -1421,10 +1421,14 @@ CREATE TABLE `usuarios` (
   `cargo` enum('admin','supervisor','verificador','auxiliar','operador','lider','coplas','super_admin') NOT NULL,
   `operacion_id` int(11) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `session_token` varchar(64) DEFAULT NULL,
   `huella` longtext DEFAULT NULL,
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp(),
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE `usuarios`
+  ADD UNIQUE KEY `uq_usuarios_session_token` (`session_token`);
 
 -- --------------------------------------------------------
 

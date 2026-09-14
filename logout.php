@@ -1,5 +1,10 @@
 <?php
-session_start();
+require_once 'core/config.php';
+
+if (isset($_SESSION['usuario_id'])) {
+    $stmt = $pdo->prepare('UPDATE usuarios SET session_token = NULL WHERE id = ? AND session_token = ?');
+    $stmt->execute([$_SESSION['usuario_id'], $_SESSION['session_token'] ?? '']);
+}
 
 
 $_SESSION = array();

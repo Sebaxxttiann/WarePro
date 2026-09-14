@@ -7,6 +7,7 @@ $esSuperAdmin = $_SESSION['cargo'] === 'super_admin';
 $operacionActiva = getOperacionActiva();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    verificarCsrf();
     $action = $_POST['action'] ?? '';
     
     
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$_SESSION['usuario_id']]);
             $usuario = $stmt->fetch();
             
-            if (md5($password_actual) !== $usuario['password']) {
+            if (!verificarPassword($password_actual, $usuario['password'])) {
                 echo json_encode(['success' => false, 'message' => 'La contraseña actual es incorrecta']);
                 exit();
             }
@@ -53,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             if (!empty($password_nueva)) {
                 $stmt = $pdo->prepare("UPDATE usuarios SET nombre = ?, cedula = ?, password = ? WHERE id = ?");
-                $stmt->execute([$nombre, $cedula, md5($password_nueva), $_SESSION['usuario_id']]);
+                $stmt->execute([$nombre, $cedula, hashPassword($password_nueva), $_SESSION['usuario_id']]);
             } else {
                 $stmt = $pdo->prepare("UPDATE usuarios SET nombre = ?, cedula = ? WHERE id = ?");
                 $stmt->execute([$nombre, $cedula, $_SESSION['usuario_id']]);
@@ -106,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {
                 if (!empty($password_nueva)) {
                     $stmt = $pdo->prepare("UPDATE usuarios SET nombre = ?, cedula = ?, cargo = ?, activo = ?, password = ? WHERE id = ?");
-                    $stmt->execute([$nombre, $cedula, $cargo, $activo, md5($password_nueva), $user_id]);
+                    $stmt->execute([$nombre, $cedula, $cargo, $activo, hashPassword($password_nueva), $user_id]);
                 } else {
                     $stmt = $pdo->prepare("UPDATE usuarios SET nombre = ?, cedula = ?, cargo = ?, activo = ? WHERE id = ?");
                     $stmt->execute([$nombre, $cedula, $cargo, $activo, $user_id]);
@@ -170,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             try {
                 $stmt = $pdo->prepare("INSERT INTO usuarios (nombre, cedula, cargo, password, operacion_id) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$nombre, $cedula, $cargo, md5($password), $operacionActiva]);
+                $stmt->execute([$nombre, $cedula, $cargo, hashPassword($password), $operacionActiva]);
 
                 echo json_encode(['success' => true, 'message' => 'Usuario creado exitosamente']);
             } catch(PDOException $e) {

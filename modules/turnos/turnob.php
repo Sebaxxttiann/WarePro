@@ -22,10 +22,8 @@ if ($_POST && isset($_POST['accion'])) {
 
             foreach ($campos_imagen as $campo) {
                 if (isset($_FILES['imagen_'.$campo]) && $_FILES['imagen_'.$campo]['error'] == 0) {
-                    $ext  = pathinfo($_FILES['imagen_'.$campo]['name'], PATHINFO_EXTENSION);
-                    $file = 'turnob_'.$campo.'_'.time().'_'.rand(1000,9999).'.'.$ext;
-                    $dest = '../../uploads/'.$file;
-                    $imagenes[$campo] = move_uploaded_file($_FILES['imagen_'.$campo]['tmp_name'], $dest) ? $file : null;
+                    $path = guardarImagenSegura($_FILES['imagen_'.$campo], '../../uploads', 'turnob_'.$campo);
+                    $imagenes[$campo] = basename($path);
                 } else {
                     $imagenes[$campo] = ($_POST['accion']=='editar' && isset($_POST['imagen_actual_'.$campo]))
                         ? $_POST['imagen_actual_'.$campo] : null;

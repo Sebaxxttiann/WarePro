@@ -1,5 +1,9 @@
 {
+    "name": "warepro/warepro",
+    "description": "Sistema de gestión de almacén WarePro",
+    "type": "project",
+    "license": "proprietary",
     "require": {
-        "phpoffice/phpspreadsheet": "^5.0"
+        "phpoffice/phpspreadsheet": "^5.9"
     }
 }

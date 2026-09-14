@@ -2,6 +2,10 @@
 require_once '../../core/config.php';
 verificarLogin();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');

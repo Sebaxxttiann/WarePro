@@ -7,6 +7,13 @@ require_once '../../core/config.php';
 verificarLogin();
 require_once '../../vendor/autoload.php';
 
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as SpreadsheetDate;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 $hoy = date('Y-m-d');
 
 
@@ -25,7 +32,7 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'upload_excel') {
 
     try {
         
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+        $spreadsheet = IOFactory::load($file);
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
 
@@ -47,7 +54,7 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'upload_excel') {
 
                 
                 if (is_numeric($fecha_raw)) {
-                    $date_obj = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fecha_raw);
+                    $date_obj = SpreadsheetDate::excelToDateTimeObject($fecha_raw);
                     $fecha_formateada = $date_obj->format('Y-m-d');
                 } else {
                     

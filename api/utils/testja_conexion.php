@@ -9,6 +9,7 @@ if (file_exists('../../core/config.php')) {
     echo "../../core/config.php existe<br>";
     require_once '../../core/config.php';
 verificarLogin();
+        requireRole(['admin', 'super_admin']);
     echo "../../core/config.php cargado correctamente<br>";
 } else {
     die("ERROR: ../core/config.php NO existe");

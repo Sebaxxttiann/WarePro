@@ -89,7 +89,7 @@ $tableros = $stmt->fetchAll();
                             <?php echo $tab['codigo_qr']; ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                            <button onclick="generarQR('<?php echo $tab['codigo_qr']; ?>', '<?php echo $tab['nombre']; ?>')" class="inline-flex items-center p-2 border border-gray-200 rounded-lg text-black bg-white hover:bg-gray-100 transition-all shadow-sm" title="Ver QR">
+                            <button onclick="generarQR(<?php echo htmlspecialchars(json_encode($tab['codigo_qr']), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(json_encode($tab['nombre']), ENT_QUOTES, 'UTF-8'); ?>)" class="inline-flex items-center p-2 border border-gray-200 rounded-lg text-black bg-white hover:bg-gray-100 transition-all shadow-sm" title="Ver QR">
                                 <i class="fas fa-qrcode"></i>
                             </button>
                             <button onclick="limpiarTablero(<?php echo $tab['id']; ?>)" class="inline-flex items-center p-2 border border-gray-200 rounded-lg text-orange-600 bg-white hover:bg-orange-50 transition-all shadow-sm" title="Limpiar Productos">

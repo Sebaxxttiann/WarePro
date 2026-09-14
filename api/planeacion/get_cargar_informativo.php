@@ -3,6 +3,9 @@ require_once '../../core/config.php';
 
 
 verificarLogin();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
 if (!isset($_SESSION['usuario_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'No autorizado']);
@@ -200,26 +203,11 @@ function uploadImage($file) {
     $maxSize = 5 * 1024 * 1024; 
     
     
-    if (!in_array($file['type'], $allowedTypes)) {
+    try {
+        return basename(guardarImagenSegura($file, $uploadDir, 'info'));
+    } catch (RuntimeException $e) {
         return false;
     }
-    
-    
-    if ($file['size'] > $maxSize) {
-        return false;
-    }
-    
-    
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('info_') . '.' . $extension;
-    $filepath = $uploadDir . $filename;
-    
-    
-    if (move_uploaded_file($file['tmp_name'], $filepath)) {
-        return $filename;
-    }
-    
-    return false;
 }
 
 

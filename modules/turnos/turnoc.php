@@ -3,6 +3,10 @@ require_once '../../core/config.php';
 verificarLogin();
 include '../../core/header.php';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 date_default_timezone_set('America/Bogota');
 
 $user_cargo           = $_SESSION['cargo']  ?? 'operador';
@@ -20,16 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action']) && $_POST['action'] == 'add') {
         $picking_img = $pnc_img = $stayin_img = '';
         if (isset($_FILES['picking_img']) && $_FILES['picking_img']['error'] == 0) {
-            $picking_img = '../../uploads/'.time().'_picking_'.basename($_FILES['picking_img']['name']);
-            move_uploaded_file($_FILES['picking_img']['tmp_name'], $picking_img);
+            $picking_img = guardarImagenSegura($_FILES['picking_img'], '../../uploads', 'picking');
         }
         if (isset($_FILES['pnc_img']) && $_FILES['pnc_img']['error'] == 0) {
-            $pnc_img = '../../uploads/'.time().'_pnc_'.basename($_FILES['pnc_img']['name']);
-            move_uploaded_file($_FILES['pnc_img']['tmp_name'], $pnc_img);
+            $pnc_img = guardarImagenSegura($_FILES['pnc_img'], '../../uploads', 'pnc');
         }
         if (isset($_FILES['stayin_img']) && $_FILES['stayin_img']['error'] == 0) {
-            $stayin_img = '../../uploads/'.time().'_stayin_'.basename($_FILES['stayin_img']['name']);
-            move_uploaded_file($_FILES['stayin_img']['tmp_name'], $stayin_img);
+            $stayin_img = guardarImagenSegura($_FILES['stayin_img'], '../../uploads', 'stayin');
         }
         try {
             $sql = "INSERT INTO turnoc_registros (
@@ -94,16 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $pnc_img     = $_POST['pnc_img_actual'];
         $stayin_img  = $_POST['stayin_img_actual'];
         if (isset($_FILES['picking_img_edit']) && $_FILES['picking_img_edit']['error'] == 0) {
-            $picking_img = '../../uploads/'.time().'_picking_'.basename($_FILES['picking_img_edit']['name']);
-            move_uploaded_file($_FILES['picking_img_edit']['tmp_name'], $picking_img);
+            $picking_img = guardarImagenSegura($_FILES['picking_img_edit'], '../../uploads', 'picking');
         }
         if (isset($_FILES['pnc_img_edit']) && $_FILES['pnc_img_edit']['error'] == 0) {
-            $pnc_img = '../../uploads/'.time().'_pnc_'.basename($_FILES['pnc_img_edit']['name']);
-            move_uploaded_file($_FILES['pnc_img_edit']['tmp_name'], $pnc_img);
+            $pnc_img = guardarImagenSegura($_FILES['pnc_img_edit'], '../../uploads', 'pnc');
         }
         if (isset($_FILES['stayin_img_edit']) && $_FILES['stayin_img_edit']['error'] == 0) {
-            $stayin_img = '../../uploads/'.time().'_stayin_'.basename($_FILES['stayin_img_edit']['name']);
-            move_uploaded_file($_FILES['stayin_img_edit']['tmp_name'], $stayin_img);
+            $stayin_img = guardarImagenSegura($_FILES['stayin_img_edit'], '../../uploads', 'stayin');
         }
         try {
             $sql = "UPDATE turnoc_registros SET

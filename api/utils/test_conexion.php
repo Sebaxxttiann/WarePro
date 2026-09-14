@@ -2,6 +2,7 @@
 require_once '../../core/config.php';
 
 verificarLogin();
+requireRole(['admin', 'super_admin']);
 echo "<h2>Test de Conexión a Base de Datos</h2>";
 
 try {

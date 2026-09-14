@@ -65,6 +65,32 @@ if ($user_cargo === 'super_admin') {
     
     <meta name="description" content="Ware-Pro - Sistema de Gestión de Almacén">
     <meta name="author" content="Ware-Pro">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
+    <script>
+        (function () {
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!token || !window.fetch) return;
+            const originalFetch = window.fetch;
+            window.fetch = function (resource, options) {
+                options = options || {};
+                const url = typeof resource === 'string' ? resource : resource.url;
+                if (new URL(url, window.location.href).origin === window.location.origin) {
+                    options.headers = new Headers(options.headers || {});
+                    options.headers.set('X-CSRF-Token', token);
+                }
+                return originalFetch.call(this, resource, options);
+            };
+            document.addEventListener('submit', function (event) {
+                if (!event.target.querySelector('input[name="csrf_token"]')) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'csrf_token';
+                    input.value = token;
+                    event.target.appendChild(input);
+                }
+            });
+        }());
+    </script>
     
     <title>Ware-Pro - Sistema de Gestión</title>
 </head>

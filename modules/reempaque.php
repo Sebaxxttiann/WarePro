@@ -5,6 +5,10 @@ require_once '../core/config.php';
 verificarLogin();
 require_once '../core/header.php';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 $alert_message = '';
 $alert_type = '';
 
@@ -148,11 +152,8 @@ if ($_POST) {
                         mkdir($upload_dir, 0777, true);
                     }
                     
-                    $file_extension = pathinfo($_FILES['evidencia']['name'], PATHINFO_EXTENSION);
-                    $file_name = 'evidencia_' . $_POST['grupo_registro'] . '_' . time() . '.' . $file_extension;
-                    $file_path = $upload_dir . $file_name;
-                    
-                    if (move_uploaded_file($_FILES['evidencia']['tmp_name'], $file_path)) {
+                    $file_path = guardarImagenSegura($_FILES['evidencia'], $upload_dir, 'evidencia');
+                    if ($file_path) {
                         $stmt = $pdo->prepare("UPDATE reempaque1 SET evidencia_5_porque = ?, estado_ciclo = 'completo' WHERE grupo_registro = ? AND operacion_id = ?");
                         $stmt->execute([$file_path, $_POST['grupo_registro'], getOperacionActiva()]);
                         

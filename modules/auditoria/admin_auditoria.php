@@ -11,6 +11,7 @@ $errores = [];
 $exito = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
     $accion = $_POST['accion'] ?? '';
 
     try {
@@ -72,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $dir = __DIR__ . '/../../uploads/auditoria_media';
                             if (!is_dir($dir)) mkdir($dir, 0755, true);
                             
-                            $ext = pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION);
-                            $filename = date('Ymd_His') . '_' . uniqid() . '.' . $ext;
+                            $rutaFisica = guardarMediaSegura($_FILES['archivo'], $dir, 'media');
+                            $filename = basename($rutaFisica);
                             $rutaFinal = '../../uploads/auditoria_media/' . $filename;
                             
-                            if (move_uploaded_file($_FILES['archivo']['tmp_name'], $dir . '/' . $filename)) {
+                            if ($rutaFisica) {
                                 $tipoDB = (strpos($mime, 'image') !== false) ? 'imagen' : 'pdf';
                                 $stmt = $pdo->prepare("INSERT INTO auditoria_media (auditoria_id, nombre_archivo, ruta, tipo) VALUES (?, ?, ?, ?)");
                                 $stmt->execute([$id, $_FILES['archivo']['name'], $rutaFinal, $tipoDB]);
@@ -406,7 +407,7 @@ try {
 
                     <div class="card-content">
                         <div class="descripcion-modulo">
-                            <?php echo $r['criterios']; ?>
+                            <?php echo nl2br(htmlspecialchars($r['criterios'], ENT_QUOTES, 'UTF-8')); ?>
                         </div>
                         
                         <?php if (!empty($r['archivos'])): ?>
