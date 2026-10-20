@@ -3,6 +3,7 @@ date_default_timezone_set('America/Bogota');
 
 require_once '../core/config.php';
 verificarLogin();
+require_once '../core/metas.php';
 require_once '../core/header.php';
 
 $alert_message = '';
@@ -42,13 +43,12 @@ if ($_POST) {
                     'PET-TW' => 'Vertimiento PET'
                 ];
                 
-                $meta_buscar = $actividad_meta[$_POST['actividad']];
+                $meta_buscar = $actividad_meta[$_POST['actividad']] ?? null;
                 
-                $stmt = $pdo->prepare("SELECT meta_minima, disparador FROM metas WHERE actividad = ?");
-                $stmt->execute([$meta_buscar]);
-                $meta = $stmt->fetch();
-                
-                $cumple_meta = $cumplimiento_general >= $meta['meta_minima'] ? 1 : 0;
+                $meta = $meta_buscar ? obtenerMeta($pdo, getOperacionActiva(), $meta_buscar) : null;
+                $resultado_meta = evaluarContraMeta($cumplimiento_general, $meta);
+
+                $cumple_meta = ($resultado_meta === 'cumple') ? 1 : 0;
                 $estado_ciclo = $cumple_meta ? 'completo' : 'pendiente';
                 
                 $grupo_registro = uniqid('vert_');
@@ -102,7 +102,7 @@ if ($_POST) {
                         'title' => 'Atención ' . $_SESSION['nombre'],
                         'html' => '<div style="text-align: left;"><strong>No cumpliste con la meta de ' . $_POST['actividad'] . '</strong><br><br>' .
                                   'Tu cumplimiento: <strong>' . number_format($cumplimiento_general, 2) . ' unidades/hora</strong><br>' .
-                                  'Meta requerida: <strong>' . $meta['meta_minima'] . ' unidades/hora</strong><br><br>' .
+                                  'Meta requerida: <strong>' . ($meta['meta_minima'] ?? '-') . ' unidades/hora</strong><br><br>' .
                                   '<strong style="color: #e74c3c;">IMPORTANTE:</strong> Debes cargar la evidencia del <strong>5 Por Qué</strong> para que tu ciclo esté completo.<br>' .
                                   'Si no lo haces, tu ciclo quedará <strong>INCOMPLETO</strong>.</div>',
                         'icon' => 'warning',
@@ -209,10 +209,9 @@ $stmt = $pdo->prepare("
 $stmt->execute([getOperacionActiva()]);
 $registros = $stmt->fetchAll();
 
-$stmt = $pdo->query("SELECT actividad, meta_minima, disparador FROM metas WHERE actividad IN ('Vertimiento NR', 'Vertimiento R', 'Vertimiento PET')");
 $metas = [];
-while ($row = $stmt->fetch()) {
-    $metas[$row['actividad']] = ['meta' => $row['meta_minima'], 'disparador' => $row['disparador']];
+foreach (obtenerMetas($pdo, getOperacionActiva(), ['Vertimiento NR', 'Vertimiento R', 'Vertimiento PET']) as $row) {
+    $metas[$row['actividad']] = ['meta' => $row['meta_minima'], 'disparador' => $row['disparador'], 'sentido' => $row['sentido'] ?? 'mayor'];
 }
 ?>
 
@@ -1012,17 +1011,12 @@ while ($row = $stmt->fetch()) {
                                     'PET-TW' => 'Vertimiento PET'
                                 ];
                                 
-                                $meta_key = $actividad_meta_display[$registro['actividad']];
-                                $meta = $metas[$meta_key]['meta'];
-                                $disparador = $metas[$meta_key]['disparador'];
-                                
-                                if ($cumplimiento >= $meta) {
-                                    $class = 'cumple-meta';
-                                } elseif ($cumplimiento <= $disparador) {
-                                    $class = 'disparador';
-                                } else {
-                                    $class = 'no-cumple-meta';
-                                }
+                                $meta_key = $actividad_meta_display[$registro['actividad']] ?? null;
+                                $meta_cfg = $meta_key ? ($metas[$meta_key] ?? null) : null;
+                                $resultado_badge = $meta_cfg
+                                    ? evaluarMeta($cumplimiento, $meta_cfg['meta'], $meta_cfg['disparador'], $meta_cfg['sentido'])
+                                    : ($registro['cumple_meta'] ? 'cumple' : 'no_cumple');
+                                $class = ['cumple' => 'cumple-meta', 'disparador' => 'disparador', 'no_cumple' => 'no-cumple-meta'][$resultado_badge];
                                 ?>
                                 <span class="cumplimiento-badge <?php echo $class; ?>">
                                     <?php echo number_format($cumplimiento, 2); ?>
@@ -1413,7 +1407,8 @@ while ($row = $stmt->fetch()) {
             
             if (actividad && actividadToMeta[actividad] && metas[actividadToMeta[actividad]]) {
                 const meta = metas[actividadToMeta[actividad]];
-                metaInfo.innerHTML = `Meta: <strong>${meta.meta}</strong> | Disparador: <strong>${meta.disparador}</strong>`;
+                const disp = (meta.disparador === null || meta.disparador === '') ? 'No definido' : meta.disparador;
+                metaInfo.innerHTML = `Meta: <strong>${meta.meta}</strong> | Disparador: <strong>${disp}</strong>`;
             } else {
                 metaInfo.innerHTML = '';
             }
