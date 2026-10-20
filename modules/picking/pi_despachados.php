@@ -760,18 +760,7 @@ $registros = $stmt->fetchAll();
                             </div>
                             <div class="form-group">
                                 <label for="verificador"><i class="fas fa-user-check"></i> Verificador *</label>
-                                <select id="verificador" class="form-control" required>
-                                    <option value="">Seleccionar verificador</option>
-                                    <option value="BREHITER JOSE JAIMES CAMPOS">BREHITER JOSE JAIMES CAMPOS</option>
-                                    <option value="EGLY JOSE GONZALEZ ROLON">EGLY JOSE GONZALEZ ROLON</option>
-                                    <option value="JAIDER ALBERTO TARAZONA BALAGUERA">JAIDER ALBERTO TARAZONA BALAGUERA</option>
-                                    <option value="JESUS DAVID CARVAJAL NAVAS">JESUS DAVID CARVAJAL NAVAS</option>
-                                    <option value="JESUS STEVENSON LEON SIERRA">JESUS STEVENSON LEON SIERRA</option>
-                                    <option value="JOSE ALBERTO RIVERO CONTRERAS">JOSE ALBERTO RIVERO CONTRERAS</option>
-                                    <option value="JUAN FRAN PEREZ QUINTERO">JUAN FRAN PEREZ QUINTERO</option>
-                                    <option value="MARCOS ALEJANDRO ESPAÑA LARA">MARCOS ALEJANDRO ESPAÑA LARA</option>
-                                    <option value="ROVIN ENRIQUE JIMENEZ OROZCO">ROVIN ENRIQUE JIMENEZ OROZCO</option>
-                                </select>
+                                <select id="verificador" class="form-control" required data-person-select data-cargos="verificador" data-placeholder="Seleccionar verificador"></select>
                             </div>
                             <div class="form-group">
                                 <label for="distribuidor"><i class="fas fa-truck"></i> Distribuidor *</label>
@@ -1000,7 +989,7 @@ $registros = $stmt->fetchAll();
             camposRequeridos.forEach(campo => {
                 const elemento = document.getElementById(campo);
                 if (!elemento.value.trim()) {
-                    camposFaltantes.push(elemento.previousElementSibling.textContent.replace(/\*|\s*\*/g, '').replace(/^\s*[\w\s]*\s/, ''));
+                    camposFaltantes.push((elemento.closest('.ps-wrap') || elemento).previousElementSibling.textContent.replace(/\*|\s*\*/g, '').replace(/^\s*[\w\s]*\s/, ''));
                     elemento.style.borderColor = '#d32f2f';
                 } else {
                     elemento.style.borderColor = '#e0e0e0';
@@ -1236,5 +1225,6 @@ $registros = $stmt->fetchAll();
             });
         });
     </script>
+    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 </body>
 </html>

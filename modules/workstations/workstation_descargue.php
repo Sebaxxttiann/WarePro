@@ -1,8 +1,10 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -13,22 +15,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(fecha_hora_fin) as hora_dia, COUNT(*) as total_vehiculos 
             FROM descargue 
-            WHERE DATE(fecha_hora_fin) = CURDATE() AND estado = 'finalizado'
+            WHERE operacion_id = ? AND DATE(fecha_hora_fin) = CURDATE() AND estado = 'finalizado'
             GROUP BY HOUR(fecha_hora_fin) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha_hora_fin) as dia, COUNT(*) as total_diario
             FROM descargue 
-            WHERE MONTH(fecha_hora_fin) = MONTH(CURDATE()) AND YEAR(fecha_hora_fin) = YEAR(CURDATE()) AND estado = 'finalizado'
+            WHERE operacion_id = ? AND MONTH(fecha_hora_fin) = MONTH(CURDATE()) AND YEAR(fecha_hora_fin) = YEAR(CURDATE()) AND estado = 'finalizado'
             GROUP BY DATE(fecha_hora_fin) 
             ORDER BY fecha_hora_fin ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
         
        
@@ -39,29 +41,29 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 COUNT(*) as planeados,
                 SUM(IF(estado = 'completado', 1, 0)) as descargados
             FROM sortiing 
-            WHERE fecha_ingreso = CURDATE()
+            WHERE operacion_id = ? AND fecha_ingreso = CURDATE()
         ");
-        $stmt_resumen->execute();
+        $stmt_resumen->execute([$operacion_id]);
         $resumen = $stmt_resumen->fetch();
 
         
         $stmt_recientes = $pdo->prepare("
             SELECT placa, estado 
             FROM descargue 
-            WHERE DATE(fecha_hora_inicio) = CURDATE() 
+            WHERE operacion_id = ? AND DATE(fecha_hora_inicio) = CURDATE() 
             ORDER BY fecha_hora_inicio DESC LIMIT 4
         ");
-        $stmt_recientes->execute();
+        $stmt_recientes->execute([$operacion_id]);
         $recientes = $stmt_recientes->fetchAll();
 
         
         $stmt_ultimo = $pdo->prepare("
             SELECT id, placa, usuario_descargue 
             FROM descargue 
-            WHERE estado = 'finalizado'
+            WHERE operacion_id = ? AND estado = 'finalizado'
             ORDER BY fecha_hora_fin DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
@@ -70,10 +72,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             'resumen' => $resumen,
             'recientes' => $recientes,
             'ultimo_registro' => $ultimo_registro
-        ]);
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -83,7 +85,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Descargue CD Cúcuta</title>
+    <title>Workstation - Descargue <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,7 +167,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - DESCARGUE CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - DESCARGUE <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -256,7 +259,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>
