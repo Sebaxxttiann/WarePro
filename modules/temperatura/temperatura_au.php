@@ -768,7 +768,7 @@ $registros = $stmt->fetchAll();
                     
                     <div class="form-group full-width">
                         <label for="persona">Persona que tomó la temperatura *</label>
-                        <input type="text" id="persona" class="form-control" placeholder="Nombre completo" required>
+                        <select id="persona" class="form-control" required data-person-select data-placeholder="Seleccionar persona"></select>
                     </div>
                 </form>
             </div>
@@ -1114,5 +1114,6 @@ $registros = $stmt->fetchAll();
             });
         });
     </script>
+    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 </body>
 </html>

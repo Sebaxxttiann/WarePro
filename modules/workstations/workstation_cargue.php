@@ -1,8 +1,10 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -12,45 +14,46 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(vehiculos_cargados) as total_vehiculos 
             FROM ows_cargue 
-            WHERE DATE(fecha) = CURDATE()
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE()
             GROUP BY HOUR(hora) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, SUM(vehiculos_cargados) as total_diario
             FROM ows_cargue 
-            WHERE MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
+            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
         $stmt_cargados_hoy = $pdo->prepare("
             SELECT SUM(vehiculos_cargados) 
             FROM ows_cargue 
-            WHERE DATE(fecha) = CURDATE()
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE()
         ");
-        $stmt_cargados_hoy->execute();
+        $stmt_cargados_hoy->execute([$operacion_id]);
         $cargados_hoy = $stmt_cargados_hoy->fetchColumn() ?: 0;
 
         $stmt_planeados_hoy = $pdo->prepare("
             SELECT vehiculos_planeados 
             FROM ows_cargue 
-            WHERE DATE(fecha) = CURDATE() AND vehiculos_planeados > 0
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND vehiculos_planeados > 0
             ORDER BY id ASC LIMIT 1
         ");
-        $stmt_planeados_hoy->execute();
+        $stmt_planeados_hoy->execute([$operacion_id]);
         $planeados_hoy = $stmt_planeados_hoy->fetchColumn() ?: 0;
 
         $stmt_ultimo = $pdo->prepare("
             SELECT id, vehiculos_cargados 
-            FROM ows_cargue 
+            FROM ows_cargue
+            WHERE operacion_id = ?
             ORDER BY id DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
@@ -61,10 +64,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 'planeados' => $planeados_hoy
             ],
             'ultimo_registro' => $ultimo_registro
-        ]);
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -74,7 +77,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Cargue CD Cúcuta</title>
+    <title>Workstation - Cargue <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -156,7 +159,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - CARGUE CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - CARGUE <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -249,7 +253,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>

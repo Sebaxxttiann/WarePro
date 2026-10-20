@@ -973,18 +973,7 @@ try {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="verificador">Verificador</label>
-                                    <select id="verificador" name="verificador" required>
-                                        <option value="">Seleccionar verificador</option>
-                                        <option value="BREHITER JOSE JAIMES CAMPOS">BREHITER JOSE JAIMES CAMPOS</option>
-                                        <option value="EGLY JOSE GONZALEZ ROLON">EGLY JOSE GONZALEZ ROLON</option>
-                                        <option value="JAIDER ALBERTO TARAZONA BALAGUERA">JAIDER ALBERTO TARAZONA BALAGUERA</option>
-                                        <option value="JESUS DAVID CARVAJAL NAVAS">JESUS DAVID CARVAJAL NAVAS</option>
-                                        <option value="JESUS STEVENSON LEON SIERRA">JESUS STEVENSON LEON SIERRA</option>
-                                        <option value="JOSE ALBERTO RIVERO CONTRERAS">JOSE ALBERTO RIVERO CONTRERAS</option>
-                                        <option value="JUAN FRAN PEREZ QUINTERO">JUAN FRAN PEREZ QUINTERO</option>
-                                        <option value="MARCOS ALEJANDRO ESPAÑA LARA">MARCOS ALEJANDRO ESPAÑA LARA</option>
-                                        <option value="ROVIN ENRIQUE JIMENEZ OROZCO">ROVIN ENRIQUE JIMENEZ OROZCO</option>
-                                    </select>
+                                    <select id="verificador" name="verificador" required data-person-select data-cargos="verificador" data-placeholder="Seleccionar verificador"></select>
                                 </div>
                             </div>
                         </div>
@@ -1620,6 +1609,7 @@ try {
             toggleMaterialDropdown();
         });
     </script>
+    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 </body>
 
 </html>

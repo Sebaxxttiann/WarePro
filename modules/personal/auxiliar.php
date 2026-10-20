@@ -368,6 +368,20 @@
                 </div>
             </div>
 
+            <div class="module-card tableros" onclick="window.location.href='../workstations/index.php'">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <h3 class="card-title">Workstations</h3>
+                </div>
+                <p class="card-description">Acceso directo a los tableros de cada workstation: avance del día frente a la meta de la operación.</p>
+                <div class="card-footer">
+                    <span class="status-badge status-active">Activo</span>
+                    <span class="card-action">Ver detalles →</span>
+                </div>
+            </div>
+
         </div>
     </div>
 

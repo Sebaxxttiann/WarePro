@@ -10,11 +10,6 @@ $nombre_sesion_activa = $_SESSION['nombre'] ?? 'Usuario';
 
 if (!file_exists('uploads')) mkdir('uploads', 0777, true);
 
-$sql_usuarios = "SELECT nombre FROM usuarios WHERE activo = 1 AND operacion_id = ? ORDER BY nombre ASC";
-$stmt_u = $pdo->prepare($sql_usuarios);
-$stmt_u->execute([getOperacionActiva()]);
-$lista_usuarios = $stmt_u->fetchAll(PDO::FETCH_COLUMN);
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (isset($_POST['action']) && $_POST['action'] == 'add') {
@@ -255,7 +250,6 @@ try {
     .swal2-cancel{background:var(--text-g)!important;border-radius:8px!important;font-weight:600!important;border:none!important}
 </style>
 
-<?php $usuarios_json = json_encode($lista_usuarios); ?>
 
 <div style="max-width:1400px;margin:0 auto;padding:1rem .75rem;">
 
@@ -553,12 +547,7 @@ try {
                     <?php endforeach; ?>
                     <div>
                         <label class="lbl"><i class="fas fa-user-check"></i> Auxiliar Entrevistado</label>
-                        <div class="sd" id="add_dd_aux">
-                            <input type="text" id="add_search_aux" placeholder="Buscar usuario…" class="fi" autocomplete="off"
-                                oninput="filterDD('add')" onfocus="openDD('add')" onblur="blurDD('add')">
-                            <input type="hidden" name="auxiliar_entrevistado" id="add_aux_val">
-                            <ul id="add_list_aux" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="auxiliar_entrevistado" id="add_aux_val" class="fi" data-person-select data-cargos="auxiliar" data-placeholder="Buscar usuario…"></select>
                     </div>
                 </div>
             </div>
@@ -733,12 +722,7 @@ try {
                     <?php endforeach; ?>
                     <div>
                         <label class="lbl"><i class="fas fa-user-check"></i> Auxiliar Entrevistado</label>
-                        <div class="sd" id="edit_dd_aux">
-                            <input type="text" id="edit_search_aux" placeholder="Buscar usuario…" class="fi" autocomplete="off"
-                                oninput="filterDD('edit')" onfocus="openDD('edit')" onblur="blurDD('edit')">
-                            <input type="hidden" name="auxiliar_entrevistado" id="edit_aux_val">
-                            <ul id="edit_list_aux" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="auxiliar_entrevistado" id="edit_aux_val" class="fi" data-person-select data-cargos="auxiliar" data-placeholder="Buscar usuario…"></select>
                     </div>
                 </div>
             </div>
@@ -784,8 +768,8 @@ try {
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 <script>
-const USUARIOS  = <?php echo $usuarios_json; ?>;
 const SUPERVISOR = <?php echo json_encode($nombre_sesion_activa); ?>;
 
 
@@ -824,37 +808,6 @@ function calcPct(pfx){
 }
 
 
-function initDD(pfx){
-    const ul=document.getElementById(pfx+'_list_aux');
-    ul.innerHTML='';
-    USUARIOS.forEach(n=>{
-        const li=document.createElement('li');
-        li.textContent=n;
-        li.onmousedown=e=>{e.preventDefault();selectDD(pfx,n)};
-        ul.appendChild(li);
-    });
-}
-function filterDD(pfx){
-    const q=document.getElementById(pfx+'_search_aux').value.toLowerCase();
-    const ul=document.getElementById(pfx+'_list_aux');
-    let vis=0;
-    ul.querySelectorAll('li:not(.nores)').forEach(li=>{
-        const show=li.textContent.toLowerCase().includes(q);
-        li.style.display=show?'':'none';
-        if(show) vis++;
-    });
-    const nr=ul.querySelector('.nores');
-    if(vis===0&&!nr){const li=document.createElement('li');li.className='nores';li.textContent='Sin resultados';ul.appendChild(li);}
-    else if(vis>0&&nr) nr.remove();
-    ul.classList.add('open');
-}
-function openDD(pfx){ initDD(pfx); filterDD(pfx); }
-function blurDD(pfx){ setTimeout(()=>document.getElementById(pfx+'_list_aux').classList.remove('open'),160); }
-function selectDD(pfx,val){
-    document.getElementById(pfx+'_search_aux').value=val;
-    document.getElementById(pfx+'_aux_val').value=val;
-    document.getElementById(pfx+'_list_aux').classList.remove('open');
-}
 
 
 function confirmDelete(id){
@@ -881,7 +834,6 @@ function editRecord(rec){
     const texts=['actividad_adicional_1','hrs_1','actividad_adicional_2','hrs_2','actividad_adicional_3','productividad_3','hrs_3'];
     texts.forEach(n=>{const el=document.getElementById('edit_'+n);if(el) el.value=rec[n]||'';});
     const av=rec.auxiliar_entrevistado||'';
-    document.getElementById('edit_search_aux').value=av;
     document.getElementById('edit_aux_val').value=av;
     document.getElementById('picking_img_actual').value=rec.picking_img||'';
     document.getElementById('pnc_img_actual').value=rec.pnc_img||'';
