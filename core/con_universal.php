@@ -19,6 +19,9 @@ if ($cabHost !== false && $cabUser !== false && $cabPass !== false && $cabName !
     $pdo_cab->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo_cab->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } else {
+    // Sin WAREPRO_CAB_* se usa la BD principal. Se deja constancia en el log
+    // para detectar despliegues donde la BD CAB quedó sin configurar.
+    error_log('WarePro CAB database not configured; falling back to primary database.');
     /** @var PDO $pdo_cab */
     $pdo_cab = $pdo_warepro;
 }

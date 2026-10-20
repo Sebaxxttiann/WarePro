@@ -3,6 +3,10 @@ require_once '../../core/config.php';
 verificarLogin();
 require_once '../../core/header.php';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 date_default_timezone_set('America/Bogota');
 
 $user_cargo  = $_SESSION['cargo']  ?? 'operador';

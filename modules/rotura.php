@@ -4,6 +4,10 @@ require_once '../core/config.php';
 
 verificarLogin();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verificarCsrf();
+}
+
 $current_user = isset($_SESSION['nombre']) ? $_SESSION['nombre'] : '';
 
 try {

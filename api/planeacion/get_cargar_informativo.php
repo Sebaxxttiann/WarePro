@@ -3,7 +3,7 @@ require_once '../../core/config.php';
 
 
 verificarLogin();
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     verificarCsrf();
 }
 if (!isset($_SESSION['usuario_id'])) {
