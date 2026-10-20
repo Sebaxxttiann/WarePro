@@ -275,9 +275,33 @@
         <span class="card-action">Acceder →</span>
     </div>
 </div>
-          
-    
-    
+
+           <div class="module-card links-montacargas" onclick="window.location.href='../workstations/index.php'">
+    <div class="card-header">
+        <div class="card-icon">
+            <i class="fas fa-desktop"></i>
+        </div>
+        <h3 class="card-title">Workstations</h3>
+    </div>
+
+    <p class="card-description">
+        Acceso directo a los tableros de cada workstation: avance del día frente a la meta de la operación.
+    </p>
+
+    <ul class="card-features">
+        <li><i class="fas fa-check-circle"></i> Seguimiento en vivo por estación</li>
+        <li><i class="fas fa-check-circle"></i> Cumplimiento vs. meta configurada</li>
+        <li><i class="fas fa-check-circle"></i> Tableros listos para pantalla/TV</li>
+    </ul>
+
+    <div class="card-footer">
+        <span class="status-badge status-active">Activo</span>
+        <span class="card-action">Acceder →</span>
+    </div>
+</div>
+
+
+
 </div>
     </div>
 

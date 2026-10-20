@@ -1,16 +1,35 @@
 <?php
 include '../../core/config.php';
+require_once '../../core/metas.php';
+require_once '../../core/compensacion.php';
 
 
 verificarLogin();
 $cargoUsuario = $_SESSION['cargo'] ?? '';
+$operacion_id = (int)getOperacionActiva();
+$puede_administrar_opm = in_array($cargoUsuario, ['super_admin', 'admin', 'lider'], true);
 
 $mes_actual = date('m');
 $anio_actual = date('Y');
 $mes_anio_str = $anio_actual . '-' . $mes_actual;
 
+// Umbrales de tiempos de atención (minutos, menos es mejor) configurados por operación en Metas.
+$metas_tiempos = obtenerMetas($pdo, $operacion_id, ['Tiempo T1', 'Tiempo T2', 'Tiempo T4']);
+$meta_t1 = $metas_tiempos['Tiempo T1'] ?? null;
+$meta_t2 = $metas_tiempos['Tiempo T2'] ?? null;
+$meta_t4 = $metas_tiempos['Tiempo T4'] ?? null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['check_fecha']) && ($cargoUsuario === 'admin' || $cargoUsuario === 'lider')) {
+function opmTiempoCumple($valor, ?array $metaRow): bool {
+    return evaluarContraMeta($valor, $metaRow) === 'cumple';
+}
+
+function opmUmbralTexto(?array $metaRow): string {
+    if (!$metaRow) return 'sin meta';
+    return rtrim(rtrim(number_format((float)$metaRow['meta_minima'], 2, '.', ''), '0'), '.');
+}
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['check_fecha']) && $puede_administrar_opm) {
     header('Content-Type: application/json');
     $stmt = $pdo->prepare("SELECT * FROM tiempos_atencion WHERE fecha = ? AND operacion_id = ?");
     $stmt->execute([$_GET['check_fecha'], getOperacionActiva()]);
@@ -20,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['check_fecha']) && ($car
 }
 
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_tiempos']) && ($cargoUsuario === 'admin' || $cargoUsuario === 'lider')) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_tiempos']) && $puede_administrar_opm) {
     header('Content-Type: application/json');
     try {
         $fecha_ingreso = $_POST['fecha_tiempos'];
@@ -34,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_tiempos']) && ($
         $ya_existia = $stmtCheck->fetchColumn() > 0;
 
 
-        $cumple_tiempos = ($t1 <= 60 && $t2 <= 50 && $t4 <= 45) ? 1 : 0;
+        $cumple_tiempos = (opmTiempoCumple($t1, $meta_t1) && opmTiempoCumple($t2, $meta_t2) && opmTiempoCumple($t4, $meta_t4)) ? 1 : 0;
 
         $stmt = $pdo->prepare("INSERT INTO tiempos_atencion (fecha, t1, t2, t4, cumple, operacion_id) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE t1 = ?, t2 = ?, t4 = ?, cumple = ?");
         $stmt->execute([$fecha_ingreso, $t1, $t2, $t4, $cumple_tiempos, getOperacionActiva(), $t1, $t2, $t4, $cumple_tiempos]);
@@ -52,27 +71,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_tiempos']) && ($
 
 
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_tiempos']) && ($cargoUsuario === 'admin' || $cargoUsuario === 'lider')) {
-    
-    
-    $pdo->exec("CREATE TABLE IF NOT EXISTS config_opm_global (
-        mes_anio VARCHAR(7) PRIMARY KEY,
-        cumple_adherencia TINYINT(1) DEFAULT 1,
-        penalidad_cargue DECIMAL(5,2) DEFAULT 0
-    )");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax_tiempos']) && $puede_administrar_opm) {
 
     if (isset($_POST['cambiar_adherencia'])) {
-        $nuevo_estado = (int)$_POST['estado_adherencia'];
-        $stmt = $pdo->prepare("INSERT INTO config_opm_global (mes_anio, cumple_adherencia) VALUES (?, ?) ON DUPLICATE KEY UPDATE cumple_adherencia = ?");
-        $stmt->execute([$mes_anio_str, $nuevo_estado, $nuevo_estado]);
+        $nuevo_estado = (int)$_POST['estado_adherencia'] ? 1 : 0;
+        $stmt = $pdo->prepare("INSERT INTO config_opm_global (mes_anio, operacion_id, cumple_adherencia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE cumple_adherencia = ?");
+        $stmt->execute([$mes_anio_str, $operacion_id, $nuevo_estado, $nuevo_estado]);
         header("Location: c_opm.php?msg=adherencia_ok");
         exit();
     }
     
     if (isset($_POST['guardar_penalidad_cargue'])) {
         $penalidad = min(20, max(0, (float)$_POST['valor_penalidad']));
-        $stmt = $pdo->prepare("INSERT INTO config_opm_global (mes_anio, penalidad_cargue) VALUES (?, ?) ON DUPLICATE KEY UPDATE penalidad_cargue = ?");
-        $stmt->execute([$mes_anio_str, $penalidad, $penalidad]);
+        $stmt = $pdo->prepare("INSERT INTO config_opm_global (mes_anio, operacion_id, penalidad_cargue) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE penalidad_cargue = ?");
+        $stmt->execute([$mes_anio_str, $operacion_id, $penalidad, $penalidad]);
         header("Location: c_opm.php?msg=cargue_ok");
         exit();
     }
@@ -84,32 +96,21 @@ include '../../core/header.php';
 $nombre_usuario = $_SESSION['nombre']; 
 
 
-$dia_actual = (int)date('j'); 
-$dias_habiles_total = 25;
+$compensacion_opm = obtenerCompensacion($pdo, $operacion_id, 'operador');
+$stmtOp = $pdo->prepare("SELECT nombre FROM operaciones WHERE id = ?");
+$stmtOp->execute([$operacion_id]);
+$nombre_operacion = $stmtOp->fetchColumn() ?: ('Operación #' . $operacion_id);
+
+$dia_actual = (int)date('j');
+$dias_habiles_total = $compensacion_opm['dias_habiles'];
 $dias_transcurridos = min($dia_actual, $dias_habiles_total);
 
 $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 $mes_texto = $meses[(int)$mes_actual - 1] . ' ' . $anio_actual;
 
 
-$pdo->exec("CREATE TABLE IF NOT EXISTS config_opm_global (
-    mes_anio VARCHAR(7) PRIMARY KEY,
-    cumple_adherencia TINYINT(1) DEFAULT 1,
-    penalidad_cargue DECIMAL(5,2) DEFAULT 0
-)");
-
-$pdo->exec("CREATE TABLE IF NOT EXISTS tiempos_atencion (
-    fecha DATE PRIMARY KEY,
-    t1 INT DEFAULT 0,
-    t2 INT DEFAULT 0,
-    t4 INT DEFAULT 0,
-    cumple TINYINT(1) DEFAULT 0
-)");
-
-
-
-$stmt = $pdo->prepare("SELECT cumple_adherencia, penalidad_cargue FROM config_opm_global WHERE mes_anio = ?");
-$stmt->execute([$mes_anio_str]);
+$stmt = $pdo->prepare("SELECT cumple_adherencia, penalidad_cargue FROM config_opm_global WHERE mes_anio = ? AND operacion_id = ?");
+$stmt->execute([$mes_anio_str, $operacion_id]);
 $config_opm = $stmt->fetch();
 $cumple_adherencia = $config_opm ? (int)$config_opm['cumple_adherencia'] : 1;
 $penalidad_cargue = $config_opm ? (float)$config_opm['penalidad_cargue'] : 0;
@@ -135,8 +136,8 @@ $stmt->execute([$nombre_usuario, $mes_actual, $anio_actual, getOperacionActiva()
 $lista_roturas = $stmt->fetchAll();
 
 
-$base_fija_asegurada = 166162; 
-$variable_juego = 166162; 
+$base_fija_asegurada = $compensacion_opm['monto_base'];
+$variable_juego = $compensacion_opm['monto_variable'];
 
 $diario_tiempos = ($variable_juego * 0.30) / $dias_habiles_total;   
 $diario_adherencia = ($variable_juego * 0.20) / $dias_habiles_total; 
@@ -255,15 +256,22 @@ $porcentaje_salud_variable = ($maximo_variable_hoy > 0) ? ($dinero_acumulado_var
     
     <div class="info-bar">
         <div class="info-pill pill-green">
-            <i class="fas fa-lock"></i> Base Fija (50%) Asegurada: $<?php echo number_format($base_fija_asegurada, 0, ',', '.'); ?>
+            <i class="fas fa-lock"></i> Base Fija Asegurada: $<?php echo number_format($base_fija_asegurada, 0, ',', '.'); ?>
         </div>
         <div class="info-pill pill-yellow">
             <i class="fas fa-calendar-day"></i> Días transcurridos: <?php echo $dias_transcurridos; ?> de <?php echo $dias_habiles_total; ?>
         </div>
     </div>
+    <div style="margin: -18px 0 25px 5px; font-size: 0.78rem; color: #888;">
+        <i class="fas fa-info-circle"></i> Configurado para <?php echo htmlspecialchars($nombre_operacion); ?>:
+        base $<?php echo number_format($base_fija_asegurada, 0, ',', '.'); ?>,
+        variable $<?php echo number_format($variable_juego, 0, ',', '.'); ?>,
+        <?php echo $dias_habiles_total; ?> días hábiles.
+        Metas de tiempos (Metas): T1 &le; <?php echo opmUmbralTexto($meta_t1); ?>, T2 &le; <?php echo opmUmbralTexto($meta_t2); ?>, T4 &le; <?php echo opmUmbralTexto($meta_t4); ?> min.
+    </div>
 
-    
-    <?php if ($cargoUsuario === 'admin' || $cargoUsuario === 'lider'): ?>
+
+    <?php if ($puede_administrar_opm): ?>
     <div class="admin-panel">
         <h3><i class="fas fa-user-shield" style="color: #FFD700; margin-right: 8px;"></i> Panel de Control Global (Aplica a todos los OPM)</h3>
         <div class="admin-grid">
@@ -299,7 +307,7 @@ $porcentaje_salud_variable = ($maximo_variable_hoy > 0) ? ($dinero_acumulado_var
 
             
             <div class="admin-box" style="grid-column: 1 / -1;">
-                <h4>3. Registro Diario de Tiempos de Atención (Metas: T1=60, T2=50, T4=45)</h4>
+                <h4>3. Registro Diario de Tiempos de Atención (Metas: T1=<?php echo opmUmbralTexto($meta_t1); ?>, T2=<?php echo opmUmbralTexto($meta_t2); ?>, T4=<?php echo opmUmbralTexto($meta_t4); ?>)</h4>
                 <form id="formTiempos" class="form-inline">
                     <input type="hidden" name="ajax_tiempos" value="1">
                     
@@ -410,9 +418,9 @@ $porcentaje_salud_variable = ($maximo_variable_hoy > 0) ? ($dinero_acumulado_var
                         <?php foreach($historial_tiempos as $tiempo): ?>
                         <tr>
                             <td><strong><?php echo date('d/m', strtotime($tiempo['fecha'])); ?></strong></td>
-                            <td <?php echo ($tiempo['t1'] > 60) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t1']; ?>m</td>
-                            <td <?php echo ($tiempo['t2'] > 50) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t2']; ?>m</td>
-                            <td <?php echo ($tiempo['t4'] > 45) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t4']; ?>m</td>
+                            <td <?php echo !opmTiempoCumple($tiempo['t1'], $meta_t1) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t1']; ?>m</td>
+                            <td <?php echo !opmTiempoCumple($tiempo['t2'], $meta_t2) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t2']; ?>m</td>
+                            <td <?php echo !opmTiempoCumple($tiempo['t4'], $meta_t4) ? 'style="color:#e74c3c;font-weight:bold;"' : ''; ?>><?php echo $tiempo['t4']; ?>m</td>
                             <td>
                                 <?php if($tiempo['cumple'] == 1): ?>
                                     <span class="badge badge-success"><i class="fas fa-check"></i> Cumple</span>

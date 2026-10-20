@@ -1,8 +1,15 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
+$meta = [
+    'lata' => wsMeta($pdo, $operacion_id, 'Vertimiento NR', 32, 24),  // cj/h x 24 unid
+    'pet'  => wsMeta($pdo, $operacion_id, 'Vertimiento PET', 28, 24), // cj/h x 24 unid
+    'ret'  => wsMeta($pdo, $operacion_id, 'Vertimiento R', 35, 19),   // cj/h x 19 unid
+];
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -13,22 +20,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(unidades) as total_unidades 
             FROM ows_vertimiento 
-            WHERE DATE(fecha) = CURDATE() AND actividad = 'VERTIMIENTO'
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND actividad = 'VERTIMIENTO'
             GROUP BY HOUR(hora) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(SUM(unidades) / COUNT(DISTINCT HOUR(hora)), 2) as promedio_diario
             FROM ows_vertimiento 
-            WHERE MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND actividad = 'VERTIMIENTO'
+            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND actividad = 'VERTIMIENTO'
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
         
         
@@ -36,12 +43,12 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             SELECT u.nombre as colaborador, SUM(o.unidades) as total_unidades
             FROM ows_vertimiento o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.actividad = 'VERTIMIENTO' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
+            WHERE o.operacion_id = ? AND o.actividad = 'VERTIMIENTO' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
             GROUP BY u.id
             ORDER BY total_unidades DESC
             LIMIT 5
         ");
-        $stmt_ranking->execute();
+        $stmt_ranking->execute([$operacion_id]);
         $ranking = $stmt_ranking->fetchAll();
 
         
@@ -49,21 +56,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             SELECT o.id, u.nombre as colaborador, o.unidades 
             FROM ows_vertimiento o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.actividad = 'VERTIMIENTO'
+            WHERE o.operacion_id = ? AND o.actividad = 'VERTIMIENTO'
             ORDER BY o.id DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
             'sic_diario' => $sic_diario,
             'tendencia_mes' => $tendencia_mes,
             'ranking' => $ranking,
-            'ultimo_registro' => $ultimo_registro
-        ]);
+            'ultimo_registro' => $ultimo_registro,
+            'meta' => $meta
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -73,7 +81,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Vertimiento CD Cúcuta</title>
+    <title>Workstation - Vertimiento <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -157,7 +165,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - VERTIMIENTO CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - VERTIMIENTO <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -176,22 +185,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     <div class="meta-row">
                         <div class="meta-material">LATA</div>
                         <div class="meta-datos">
-                            <div class="meta-cajas">32 CJ/ H</div>
-                            <div class="meta-unid">768 UNID/ H</div>
+                            <div class="meta-cajas" id="meta-lata-cj"><?= wsNum($meta['lata']['meta']) ?> CJ/ H</div>
+                            <div class="meta-unid" id="meta-lata-un"><?= wsNum($meta['lata']['umbral']) ?> UNID/ H</div>
                         </div>
                     </div>
                     <div class="meta-row">
                         <div class="meta-material">PET</div>
                         <div class="meta-datos">
-                            <div class="meta-cajas">28 CJ/ H</div>
-                            <div class="meta-unid">672 UNID/ H</div>
+                            <div class="meta-cajas" id="meta-pet-cj"><?= wsNum($meta['pet']['meta']) ?> CJ/ H</div>
+                            <div class="meta-unid" id="meta-pet-un"><?= wsNum($meta['pet']['umbral']) ?> UNID/ H</div>
                         </div>
                     </div>
                     <div class="meta-row">
                         <div class="meta-material">RET</div>
                         <div class="meta-datos">
-                            <div class="meta-cajas">35 CJ/ H</div>
-                            <div class="meta-unid">665 UNID/ H</div>
+                            <div class="meta-cajas" id="meta-ret-cj"><?= wsNum($meta['ret']['meta']) ?> CJ/ H</div>
+                            <div class="meta-unid" id="meta-ret-un"><?= wsNum($meta['ret']['umbral']) ?> UNID/ H</div>
                         </div>
                     </div>
                 </div>
@@ -261,7 +270,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>
@@ -271,7 +280,31 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <script>
         lucide.createIcons();
 
-        
+        // Metas de la operación (tabla metas): lata/pet x24, ret x19 unidades por caja.
+        // Como los registros no distinguen material, la banda verde arranca en el menor umbral.
+        let META = <?= json_encode($meta, JSON_INVALID_UTF8_SUBSTITUTE) ?>;
+        let metaFirma = JSON.stringify(META);
+
+        function umbralMin(m) { return Math.min(m.lata.umbral, m.pet.umbral, m.ret.umbral); }
+        function bandasMeta(m) {
+            const verde = umbralMin(m), rojo = Math.round(verde * 0.6);
+            return [
+                { from: 0, to: rojo, color: '#ff4d4d' },
+                { from: rojo, to: verde, color: '#ffeb3b' },
+                { from: verde, to: 1000000, color: '#32cd32' }
+            ];
+        }
+        function fmtMeta(n) { return Number(n).toLocaleString('es-CO', { maximumFractionDigits: 1 }); }
+        function aplicarMeta(m) {
+            META = m;
+            ['lata', 'pet', 'ret'].forEach(k => {
+                document.getElementById('meta-' + k + '-cj').textContent = fmtMeta(m[k].meta) + ' CJ/ H';
+                document.getElementById('meta-' + k + '-un').textContent = fmtMeta(m[k].umbral) + ' UNID/ H';
+            });
+            if (chartDiario) chartDiario.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+            if (chartMes) chartMes.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+        }
+
         function getChartOptions(chartType, maxLimit, bands) {
             return {
                 chart: { type: chartType, style: { fontFamily: 'Poppins' }, backgroundColor: 'transparent' },
@@ -318,17 +351,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
         function inicializarGraficas() {
             
-            let bandasDiario = [
-                { from: 0, to: 400, color: '#ff4d4d' },      
-                { from: 400, to: 660, color: '#ffeb3b' },    
-                { from: 660, to: 9999, color: '#32cd32' } 
-            ];
-            
-            let bandasMes = [
-                { from: 0, to: 400, color: '#ff4d4d' },      
-                { from: 400, to: 660, color: '#ffeb3b' },    
-                { from: 660, to: 9999, color: '#32cd32' } 
-            ];
+            let bandasDiario = bandasMeta(META);
+            let bandasMes = bandasMeta(META);
 
             chartDiario = Highcharts.chart('containerDiario', getChartOptions('line', 1000, bandasDiario));
             chartMes = Highcharts.chart('containerMes', getChartOptions('area', 1000, bandasMes));
@@ -340,6 +364,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 const data = await res.json();
 
                 if (data.error) return;
+
+                if (data.meta && JSON.stringify(data.meta) !== metaFirma) {
+                    metaFirma = JSON.stringify(data.meta);
+                    aplicarMeta(data.meta);
+                }
 
                 
                 let tbodyRanking = document.querySelector('#tabla-ranking tbody');

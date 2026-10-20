@@ -735,15 +735,8 @@ $fecha_actual = date('Y-m-d');
                     <label class="form-label" for="nombre_persona">
                         <i class="fas fa-user"></i> Nombre de quien tomó la temperatura
                     </label>
-                    <select id="nombre_persona" name="nombre_persona" class="form-select" required>
-                        <option value="">Seleccionar persona</option>
-                        <option value="Luis Ballesteros">Luis Ballesteros</option>
-                        <option value="marlyn castellanos">Marlyn Castellanos</option>
-                        <option value="Yarlin Quintero">Yarlin Quintero</option>
-                        <option value="Yeison Jaimes">Yeison Jaimes</option>
-                        <option value="Jesus Buitrago">Jesus Buitrago</option>
-
-                    </select>
+                    <select id="nombre_persona" name="nombre_persona" class="form-select" required data-person-select data-placeholder="Seleccionar persona"></select>
+                    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
                 </div>
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
