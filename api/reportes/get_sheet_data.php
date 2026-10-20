@@ -33,8 +33,10 @@ if (!isset($reportes[$nombre])) {
 $apiKey = getenv('WAREPRO_GOOGLE_API_KEY');
 if (!$apiKey) {
     $archivoSecreto = __DIR__ . '/../../core/google_api_key.php';
-    if (is_file($archivoSecreto)) {
-        $apiKey = include $archivoSecreto;
+    if (is_readable($archivoSecreto)) {
+        // @ suprime el warning si el archivo deja de ser legible a mitad de
+        // camino; el error real se registra abajo sin exponer la ruta al cliente.
+        $apiKey = @include $archivoSecreto;
     }
 }
 if (!is_string($apiKey) || $apiKey === '') {
