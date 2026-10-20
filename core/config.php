@@ -23,7 +23,20 @@ $dbUser = getenv('WAREPRO_DB_USER');
 $dbPass = getenv('WAREPRO_DB_PASS');
 $dbName = getenv('WAREPRO_DB_NAME') ?: 'u806400645_warepro';
 
-if ($dbUser === false || $dbPass === false) {
+// Las credenciales locales (gitignored) tienen prioridad sobre el vhost: así
+// se puede rotar la contraseña de MySQL sin editar la configuración de Apache.
+$dbCredentialsFile = __DIR__ . '/db_credentials.php';
+if (is_readable($dbCredentialsFile)) {
+    $dbCredentials = @include $dbCredentialsFile;
+    if (is_array($dbCredentials)) {
+        $dbHost = $dbCredentials['host'] ?? $dbHost;
+        $dbUser = $dbCredentials['user'] ?? $dbUser;
+        $dbPass = $dbCredentials['pass'] ?? $dbPass;
+        $dbName = $dbCredentials['name'] ?? $dbName;
+    }
+}
+
+if (!is_string($dbUser) || $dbUser === '' || !is_string($dbPass) || $dbPass === '') {
     error_log('WarePro database credentials are not configured.');
     http_response_code(500);
     die('Conexión de base de datos no configurada.');
