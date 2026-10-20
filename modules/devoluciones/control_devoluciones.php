@@ -86,13 +86,6 @@ try {
     $productos = [];
 }
 
-try {
-    $stmt_usuarios = $pdo->prepare("SELECT nombre FROM usuarios WHERE activo = 1 AND operacion_id = ? ORDER BY nombre ASC");
-    $stmt_usuarios->execute([getOperacionActiva()]);
-    $usuarios_lista = $stmt_usuarios->fetchAll(PDO::FETCH_COLUMN);
-} catch (Exception $e) {
-    $usuarios_lista = [];
-}
 
 $canales = ['KA', 'MM', 'T4', 'TAT'];
 
@@ -201,7 +194,6 @@ $canal_colors = [
 </style>
 
 <?php
-$usuarios_json  = json_encode($usuarios_lista);
 $productos_json = json_encode($productos);
 ?>
 
@@ -444,21 +436,11 @@ $productos_json = json_encode($productos);
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.85rem;">
                     <div>
                         <label class="lbl"><i class="fas fa-user-check"></i> Verificador</label>
-                        <div class="sd" id="dd_verificador">
-                            <input type="text" id="search_verificador" placeholder="Buscar verificador…" class="fi" autocomplete="off"
-                                oninput="filterDD('verificador')" onfocus="openDD('verificador')" onblur="blurDD('verificador')">
-                            <input type="hidden" name="verificador" id="val_verificador">
-                            <ul id="list_verificador" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="verificador" id="val_verificador" class="fi" data-person-select data-cargos="verificador" data-placeholder="Buscar verificador…"></select>
                     </div>
                     <div>
                         <label class="lbl"><i class="fas fa-file-invoice"></i> Facturador</label>
-                        <div class="sd" id="dd_facturador">
-                            <input type="text" id="search_facturador" placeholder="Buscar facturador…" class="fi" autocomplete="off"
-                                oninput="filterDD('facturador')" onfocus="openDD('facturador')" onblur="blurDD('facturador')">
-                            <input type="hidden" name="facturador" id="val_facturador">
-                            <ul id="list_facturador" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="facturador" id="val_facturador" class="fi" data-person-select data-placeholder="Buscar facturador…"></select>
                     </div>
                 </div>
             </div>
@@ -474,9 +456,9 @@ $productos_json = json_encode($productos);
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 <script>
-const USUARIOS  = <?php echo $usuarios_json; ?>;
-const PRODUCTOS = <?php echo $productos_json; ?>;
+const PRODUCTOS =<?php echo $productos_json; ?>;
 const DEVOLUCIONES = <?php echo json_encode($devoluciones); ?>;
 
 
@@ -499,40 +481,12 @@ function closeModal() {
 window.onclick = e => { if (e.target === document.getElementById('devolucionModal')) closeModal(); };
 
 
-function initDD(key) {
-    const ul = document.getElementById('list_'+key);
-    ul.innerHTML = '';
-    USUARIOS.forEach(n => {
-        const li = document.createElement('li');
-        li.textContent = n;
-        li.onmousedown = e => { e.preventDefault(); selectDD(key, n); };
-        ul.appendChild(li);
-    });
-}
-function filterDD(key) {
-    const q  = document.getElementById('search_'+key).value.toLowerCase();
-    const ul = document.getElementById('list_'+key);
-    let vis  = 0;
-    ul.querySelectorAll('li:not(.nores)').forEach(li => {
-        const show = li.textContent.toLowerCase().includes(q);
-        li.style.display = show ? '' : 'none';
-        if (show) vis++;
-    });
-    const nr = ul.querySelector('.nores');
-    if (vis === 0 && !nr) { const li = document.createElement('li'); li.className='nores'; li.textContent='Sin resultados'; ul.appendChild(li); }
-    else if (vis > 0 && nr) nr.remove();
-    ul.classList.add('open');
-}
-function openDD(key) { initDD(key); filterDD(key); }
-function blurDD(key) { setTimeout(() => document.getElementById('list_'+key).classList.remove('open'), 160); }
+// Verificador / facturador: buscador de usuarios de la operación (public/js/person-select.js)
 function selectDD(key, val) {
-    document.getElementById('search_'+key).value = val;
-    document.getElementById('val_'+key).value     = val;
-    document.getElementById('list_'+key).classList.remove('open');
+    document.getElementById('val_'+key).value = val;
 }
 function clearDD(key) {
-    document.getElementById('search_'+key).value = '';
-    document.getElementById('val_'+key).value     = '';
+    document.getElementById('val_'+key).value = '';
 }
 
 
