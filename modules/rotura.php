@@ -18,8 +18,6 @@ try {
     $usuarios = [];
 }
 
-$operadores = array_values(array_filter($usuarios, fn($u) => strtolower($u['cargo']) === 'operador'));
-
 if ($_POST) {
     $accion = $_POST['accion'] ?? '';
 
@@ -540,23 +538,12 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                             <i class="fas fa-user text-primary-gold"></i>
                             Persona que realizó la rotura *
                         </label>
-                        <input type="hidden" name="persona_rotura" id="persona-rotura-value">
-                        <div class="relative">
-                            <div class="relative">
-                                <input type="text"
-                                       id="persona-search"
-                                       class="w-full p-4 pr-12 border-2 border-border-gray rounded-xl focus:border-primary-gold focus:ring-4 focus:ring-primary-gold/10 outline-none transition-all bg-light-gray focus:bg-white"
-                                       placeholder="Buscar operador..."
-                                       autocomplete="off">
-                                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <i class="fas fa-search text-text-gray text-sm" id="persona-search-icon"></i>
-                                </div>
-                            </div>
-                            <div class="select-dropdown" id="persona-dropdown"></div>
-                        </div>
+                        <select name="persona_rotura" id="persona-rotura-value" required
+                                class="w-full p-4 border-2 border-border-gray rounded-xl focus:border-primary-gold focus:ring-4 focus:ring-primary-gold/10 outline-none transition-all bg-light-gray focus:bg-white"
+                                data-person-select data-cargos="operador" data-placeholder="Buscar persona..."></select>
                         <p class="text-xs text-text-gray mt-2 flex items-center gap-1">
                             <i class="fas fa-info-circle text-primary-gold"></i>
-                            Solo se muestran personas con cargo Operador
+                            Usuarios de la operación; los operadores aparecen primero
                         </p>
                     </div>
 
@@ -776,10 +763,15 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
+    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
     <script>
         const productos = <?php echo json_encode($productos); ?>;
         const precios = <?php echo json_encode($precios); ?>;
-        const operadoresData = <?php echo json_encode($operadores); ?>;
+        // Cargos de los usuarios de la operación (para que el select de cargo nunca quede vacío)
+        const cargosUsuarios = <?php echo json_encode(array_values(array_unique(array_filter(array_column($usuarios, 'cargo'))))); ?>;
+        const CARGO_LABELS = { auxiliar: 'Auxiliar', verificador: 'Verificador', operador: 'Operador', supervisor: 'Supervisor',
+            lider: 'Líder', coplas: 'Coplas', admin: 'Admin', super_admin: 'Super admin' };
+        const cargoLabel = c => CARGO_LABELS[String(c || '').toLowerCase()] || c;
 
         const preciosMap = {};
         precios.forEach(p => {
@@ -877,6 +869,7 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
 
         function loadPersonalData() {
+            populateCargoSelect();
             fetch('../api/rotura/get_personal1.php')
                 .then(response => response.json())
                 .then(data => {
@@ -890,60 +883,50 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                 });
         }
 
-        function populateCargoSelect() {
+        // Cargos = cargos de los usuarios de la operación + los de personal_activo (si hay); conserva el valor actual
+        function populateCargoSelect(valorActual) {
             const cargoSelect = document.getElementById('cargo-select');
+            const actual = valorActual !== undefined ? valorActual : cargoSelect.value;
+            const cargos = [];
+            const push = c => { if (c && !cargos.some(x => x.toLowerCase() === String(c).toLowerCase())) cargos.push(String(c)); };
+            cargosUsuarios.map(cargoLabel).forEach(push);
+            (personalData.cargos || []).forEach(push);
+            cargos.sort((a, b) => a.localeCompare(b, 'es'));
             cargoSelect.innerHTML = '<option value="">Seleccionar cargo</option>';
-            personalData.cargos.forEach(cargo => {
+            cargos.forEach(cargo => {
                 const option = document.createElement('option');
                 option.value = cargo;
                 option.textContent = cargo;
                 cargoSelect.appendChild(option);
             });
+            setCargo(actual);
         }
 
-        
-        document.getElementById('persona-search').addEventListener('input', function() {
-            const searchValue = this.value.toLowerCase();
-            const dropdown = document.getElementById('persona-dropdown');
-
-            document.getElementById('persona-rotura-value').value = '';
-
-            if (searchValue.length === 0) {
-                dropdown.classList.remove('show');
-                return;
+        function setCargo(valor) {
+            const cargoSelect = document.getElementById('cargo-select');
+            if (!valor) { cargoSelect.value = ''; return; }
+            let opt = Array.from(cargoSelect.options).find(o => o.value.toLowerCase() === String(valor).toLowerCase());
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = valor;
+                opt.textContent = valor;
+                cargoSelect.appendChild(opt);
             }
+            cargoSelect.value = opt.value;
+        }
 
-            const filtered = operadoresData.filter(p =>
-                p.nombre.toLowerCase().includes(searchValue)
-            );
-
-            if (filtered.length > 0) {
-                dropdown.innerHTML = filtered.map(p =>
-                    `<div class="select-option" data-nombre="${p.nombre}">
-                        <i class="fas fa-hard-hat text-primary-gold mr-2 text-xs"></i>
-                        <span class="font-semibold">${p.nombre}</span>
-                        <span class="text-text-gray text-xs ml-2">(${p.cargo})</span>
-                    </div>`
-                ).join('');
-            } else {
-                dropdown.innerHTML = `<div class="select-option text-text-gray italic">
-                    <i class="fas fa-exclamation-circle text-warning-yellow mr-2"></i>
-                    No se encontraron operadores
-                </div>`;
-            }
-            dropdown.classList.add('show');
+        // Al elegir la persona, el cargo se completa con el cargo del usuario seleccionado
+        document.getElementById('persona-rotura-value').addEventListener('change', function() {
+            const nombre = this.value;
+            if (!nombre || !window.PersonSelect) return;
+            PersonSelect.loadUsers().then(users => {
+                const u = users.find(x => x.nombre === nombre);
+                if (u && u.cargo) setCargo(cargoLabel(u.cargo));
+            });
         });
 
         document.addEventListener('click', function(e) {
-            
-            const personaOpt = e.target.closest('#persona-dropdown .select-option');
-            if (personaOpt && personaOpt.dataset.nombre) {
-                document.getElementById('persona-search').value = personaOpt.dataset.nombre;
-                document.getElementById('persona-rotura-value').value = personaOpt.dataset.nombre;
-                document.getElementById('persona-dropdown').classList.remove('show');
-            }
 
-            
             if (e.target.closest('.select-option') && e.target.closest('.select-option').dataset.codigo) {
                 const option = e.target.closest('.select-option');
                 const codigo = option.dataset.codigo;
@@ -955,10 +938,6 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                 document.getElementById('producto-dropdown').classList.remove('show');
 
                 calcularPrecio();
-            }
-
-            if (!e.target.closest('#persona-search') && !e.target.closest('#persona-dropdown')) {
-                document.getElementById('persona-dropdown').classList.remove('show');
             }
 
             if (!e.target.closest('#producto-search') && !e.target.closest('#producto-dropdown')) {
@@ -1034,11 +1013,10 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
             document.getElementById('file-label-text').textContent = 'Seleccionar imagen';
             document.getElementById('current-image').classList.add('hidden');
             document.getElementById('precio-display').classList.add('hidden');
-            document.getElementById('persona-search').value = '';
             document.getElementById('persona-rotura-value').value = '';
             precioUnitario = 0;
 
-            populateCargoSelect();
+            populateCargoSelect('');
             document.getElementById('formModal').style.display = 'block';
         }
 
@@ -1120,11 +1098,8 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                         document.querySelector('[name="canal"]').value = r.canal || '';
 
                         
-                        document.getElementById('persona-search').value = r.persona_rotura;
-                        document.getElementById('persona-rotura-value').value = r.persona_rotura;
-
-                        const cargoSelect = document.getElementById('cargo-select');
-                        cargoSelect.innerHTML = `<option value="${r.cargo_persona}" selected>${r.cargo_persona}</option>`;
+                        document.getElementById('persona-rotura-value').value = r.persona_rotura || '';
+                        populateCargoSelect(r.cargo_persona || '');
 
                         document.getElementById('tipo-producto').value = r.tipo_producto;
                         document.getElementById('codigo-producto').value = r.codigo_producto || '';
@@ -1151,7 +1126,6 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                             document.getElementById('precio-valor').style.color = precioVal >= 20000 ? '#721c24' : '#155724';
                         }
 
-                        populateCargoSelect();
                         document.getElementById('formModal').style.display = 'block';
                     }
                 });
