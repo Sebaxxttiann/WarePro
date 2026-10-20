@@ -236,6 +236,9 @@ $user_nombre = $_SESSION['nombre'] ?? 'Usuario';
             });
         }
 
+        // Proxy server-side: la API key de Google nunca sale del servidor.
+        const GOOGLE_SHEETS_URL = '../../api/reportes/get_sheet_data.php?reporte=productividades';
+
         async function fetchInitialData() {
             showLoader(true);
             try {
