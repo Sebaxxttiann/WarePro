@@ -237,9 +237,7 @@ require_once '../core/header.php';
                         </div>
                         <div>
                             <label class="lbl"><i class="fas fa-user-check"></i> Facturador</label>
-                            <select name="facturador" class="fi" required id="facturador-select">
-                                <option value="">Seleccionar facturador…</option>
-                            </select>
+                            <select name="facturador" class="fi" required id="facturador-select" data-person-select data-placeholder="Seleccionar facturador…"></select>
                         </div>
                     </div>
                 </div>
@@ -354,6 +352,7 @@ require_once '../core/header.php';
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 <script>
 let chart = null;
 let fechaInicio = '<?php echo date('Y-01-01'); ?>';
@@ -430,17 +429,6 @@ function cargarTodosLosRegistros() {
             tbody.innerHTML = '';
             if (!data.length) { tbody.innerHTML = emptyRow('No hay registros disponibles'); return; }
             data.forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = buildRow(r); tbody.appendChild(tr); });
-        }).catch(console.error);
-}
-
-function cargarFacturadores() {
-    fetch('../api/sider/get_facturadores.php')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) return;
-            const sel = document.getElementById('facturador-select');
-            sel.innerHTML = '<option value="">Seleccionar facturador…</option>';
-            data.facturadores.forEach(f => { const o = document.createElement('option'); o.value=f; o.textContent=f; sel.appendChild(o); });
         }).catch(console.error);
 }
 
@@ -528,7 +516,6 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    cargarFacturadores();
     actualizarGrafica();
     cargarTodosLosRegistros();
 });

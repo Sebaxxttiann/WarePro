@@ -387,12 +387,7 @@ require_once '../../core/header.php';
                     </div>
                     <div>
                         <label class="lbl"><i class="fas fa-user"></i> Reportado Por</label>
-                        <div class="sd" id="dd_reportado">
-                            <input type="text" id="search_reportado" placeholder="Buscar persona…" class="fi" autocomplete="off"
-                                oninput="filterDD('reportado')" onfocus="openDD('reportado')" onblur="blurDD('reportado')">
-                            <input type="hidden" name="reportado_por" id="val_reportado">
-                            <ul id="list_reportado" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="reportado_por" id="val_reportado" class="fi" data-person-select data-placeholder="Buscar persona…"></select>
                     </div>
                     <div>
                         <label class="lbl"><i class="fas fa-exclamation"></i> Tipo de Novedad</label>
@@ -466,21 +461,11 @@ require_once '../../core/header.php';
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem;">
                     <div>
                         <label class="lbl"><i class="fas fa-user-check"></i> Verificador Responsable</label>
-                        <div class="sd" id="dd_verificador">
-                            <input type="text" id="search_verificador" placeholder="Buscar verificador…" class="fi" autocomplete="off"
-                                oninput="filterDD('verificador')" onfocus="openDD('verificador')" onblur="blurDD('verificador')">
-                            <input type="hidden" name="verificador_responsable" id="val_verificador">
-                            <ul id="list_verificador" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="verificador_responsable" id="val_verificador" class="fi" data-person-select data-cargos="verificador" data-placeholder="Buscar verificador…"></select>
                     </div>
                     <div>
                         <label class="lbl"><i class="fas fa-user-cog"></i> Auxiliar Responsable</label>
-                        <div class="sd" id="dd_auxiliar">
-                            <input type="text" id="search_auxiliar" placeholder="Buscar auxiliar…" class="fi" autocomplete="off"
-                                oninput="filterDD('auxiliar')" onfocus="openDD('auxiliar')" onblur="blurDD('auxiliar')">
-                            <input type="hidden" name="auxiliar_responsable" id="val_auxiliar">
-                            <ul id="list_auxiliar" class="sdl cscroll"></ul>
-                        </div>
+                        <select name="auxiliar_responsable" id="val_auxiliar" class="fi" data-person-select data-cargos="auxiliar" data-placeholder="Buscar auxiliar…"></select>
                     </div>
                     <div style="grid-column:1/-1;">
                         <label class="lbl"><i class="fas fa-comment-alt"></i> Observaciones <span style="font-weight:400;color:var(--text-g);">(Opcional)</span></label>
@@ -500,12 +485,12 @@ require_once '../../core/header.php';
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 <script>
 let chartInstance = null;
 let fechaInicio = '<?php echo date('Y-01-01'); ?>';
 let fechaFin    = '<?php echo date('Y-12-31'); ?>';
 
-let PERSONAL = [];
 let PLACAS   = [];
 let PRODUCTOS = [];
 
@@ -545,14 +530,13 @@ function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0
 
 function openModal() {
     document.getElementById('errorModal').style.display = 'block';
-    if (!PERSONAL.length) cargarPersonal();
     if (!PLACAS.length)   cargarPlacas();
     if (!PRODUCTOS.length) cargarProductos();
 }
 function closeModal() {
     document.getElementById('errorModal').style.display = 'none';
     document.getElementById('errorForm').reset();
-    ['reportado','placa','sku','verificador','auxiliar'].forEach(k => {
+    ['placa','sku'].forEach(k => {
         document.getElementById('search_'+k).value = '';
         document.getElementById('val_'+k).value = '';
     });
@@ -562,11 +546,8 @@ window.onclick = e => { if (e.target === document.getElementById('errorModal')) 
 
 
 const DD_DATA = {
-    reportado:   () => PERSONAL.map(p => ({ label: p.nombre, val: p.nombre })),
     placa:       () => PLACAS.map(p   => ({ label: p.placa,  val: p.placa })),
     sku:         () => PRODUCTOS.map(p => ({ label: `${p.id_material} — ${p.material}`, val: p.id_material, desc: p.material })),
-    verificador: () => PERSONAL.map(p => ({ label: p.nombre, val: p.nombre })),
-    auxiliar:    () => PERSONAL.map(p => ({ label: p.nombre, val: p.nombre })),
 };
 
 function initDD(key) {
@@ -603,10 +584,6 @@ function selectDD(key, item) {
 }
 
 
-function cargarPersonal() {
-    fetch('error_verificacion.php?action=obtener_personal')
-        .then(r=>r.json()).then(data=>{ PERSONAL=data; }).catch(console.error);
-}
 function cargarPlacas() {
     fetch('error_verificacion.php?action=obtener_placas')
         .then(r=>r.json()).then(data=>{ PLACAS=data; }).catch(console.error);
@@ -817,7 +794,6 @@ function verDetalleRegistro(r) {
 document.addEventListener('DOMContentLoaded', () => {
     actualizarGrafica();
     cargarVerificadores();
-    cargarPersonal();
     cargarPlacas();
     cargarProductos();
 });

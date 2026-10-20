@@ -1,8 +1,11 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
+$meta = wsMeta($pdo, $operacion_id, 'Sorting', 380, 1); // cj/h
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -13,42 +16,43 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora_sorting) as hora_dia, SUM(cajas_sorting) as total_unidades 
             FROM sortiing 
-            WHERE DATE(fecha_sorting) = CURDATE() AND cajas_sorting IS NOT NULL
+            WHERE operacion_id = ? AND DATE(fecha_sorting) = CURDATE() AND cajas_sorting IS NOT NULL
             GROUP BY HOUR(hora_sorting) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha_sorting) as dia, ROUND(SUM(cajas_sorting) / COUNT(DISTINCT HOUR(hora_sorting)), 2) as promedio_diario
             FROM sortiing 
-            WHERE MONTH(fecha_sorting) = MONTH(CURDATE()) AND YEAR(fecha_sorting) = YEAR(CURDATE()) AND cajas_sorting IS NOT NULL
+            WHERE operacion_id = ? AND MONTH(fecha_sorting) = MONTH(CURDATE()) AND YEAR(fecha_sorting) = YEAR(CURDATE()) AND cajas_sorting IS NOT NULL
             GROUP BY DATE(fecha_sorting) 
             ORDER BY fecha_sorting ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
 
         
         $stmt_ultimo = $pdo->prepare("
             SELECT id, usuario_sorting, cajas_sorting 
             FROM sortiing 
-            WHERE cajas_sorting IS NOT NULL
+            WHERE operacion_id = ? AND cajas_sorting IS NOT NULL
             ORDER BY id DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
             'sic_diario' => $sic_diario,
             'tendencia_mes' => $tendencia_mes,
-            'ultimo_registro' => $ultimo_registro
-        ]);
+            'ultimo_registro' => $ultimo_registro,
+            'meta' => $meta
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -58,7 +62,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Sorting CD Cúcuta</title>
+    <title>Workstation - Sorting <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,7 +140,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - SORTING CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - SORTING <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -150,7 +155,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div class="card-header">META</div>
                 <div class="meta-content">
-                    <div class="highlight">380 CJ/H</div>
+                    <div class="highlight" id="meta-cajas"><?= wsNum($meta['meta']) ?> CJ/H</div>
                 </div>
                 
                 <div id="containerGauge" class="gauge-container"></div>
@@ -209,7 +214,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>
@@ -219,7 +224,33 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <script>
         lucide.createIcons();
 
-        
+        // Meta de la operación (tabla metas 'Sorting'): cajas por hora.
+        let META = <?= json_encode($meta, JSON_INVALID_UTF8_SUBSTITUTE) ?>;
+        let metaFirma = JSON.stringify(META);
+
+        function limiteRojo(m) { return m.umbral_disparador !== null ? m.umbral_disparador : Math.round(m.umbral * 0.658); }
+        function bandasMeta(m) {
+            const rojo = limiteRojo(m);
+            return [
+                { from: 0, to: rojo, color: '#ff4d4d' },
+                { from: rojo, to: m.umbral, color: '#ffeb3b' },
+                { from: m.umbral, to: 999999, color: '#32cd32' }
+            ];
+        }
+        function gaugeMax(m) { return Math.max(500, Math.ceil(m.umbral * 1.32 / 10) * 10); }
+        function gaugeStops(m) {
+            const max = gaugeMax(m), verde = Math.min(1, m.umbral / max);
+            return [[Math.min(verde - 0.02, limiteRojo(m) / max), '#ff4d4d'], [Math.max(0, verde - 0.01), '#ffeb3b'], [verde, '#32cd32']];
+        }
+        function fmtMeta(n) { return Number(n).toLocaleString('es-CO', { maximumFractionDigits: 1 }); }
+        function aplicarMeta(m) {
+            META = m;
+            document.getElementById('meta-cajas').textContent = fmtMeta(m.meta) + ' CJ/H';
+            if (chartDiario) chartDiario.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+            if (chartMes) chartMes.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+            if (chartGauge) chartGauge.yAxis[0].update({ max: gaugeMax(m), stops: gaugeStops(m) }, false);
+        }
+
         function getChartOptions() {
             return {
                 chart: { type: 'line', style: { fontFamily: 'Poppins' }, backgroundColor: 'transparent' },
@@ -236,11 +267,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     
                     showEmpty: true, 
                     title: { text: 'CAJAS', style: { fontWeight: 'bold', fontFamily: 'Poppins' } },
-                    plotBands: [
-                        { from: 0, to: 250, color: '#ff4d4d' },      
-                        { from: 250, to: 379, color: '#ffeb3b' },    
-                        { from: 380, to: 999999, color: '#32cd32' } 
-                    ],
+                    plotBands: bandasMeta(META),
                     gridLineWidth: 0,
                     labels: { style: { fontWeight: 'bold', color: '#000', fontFamily: 'Poppins' } }
                 },
@@ -282,12 +309,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 },
                 yAxis: {
                     min: 0,
-                    max: 500,
-                    stops: [
-                        [0.50, '#ff4d4d'], 
-                        [0.75, '#ffeb3b'], 
-                        [0.76, '#32cd32']  
-                    ],
+                    max: gaugeMax(META),
+                    stops: gaugeStops(META),
                     lineWidth: 0,
                     tickWidth: 0,
                     minorTickInterval: null,
@@ -314,6 +337,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 const data = await res.json();
 
                 if (data.error) return;
+
+                if (data.meta && JSON.stringify(data.meta) !== metaFirma) {
+                    metaFirma = JSON.stringify(data.meta);
+                    aplicarMeta(data.meta);
+                }
 
                 
                 let labelsDiario = data.sic_diario.map(d => d.hora_dia + "h");
@@ -349,7 +377,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     let unidades = parseInt(data.ultimo_registro.cajas_sorting);
 
                     if (ultimoIdRegistro !== 0) { 
-                        hablar(`Atención equipo de sorting. Se acaban de ingresar ${unidades} cajas al área. Mantengamos el ritmo, reacomodemos las estibas de manera estratégica y garanticemos el flujo constante. Nuestra meta es 380 cajas por hora.`);
+                        hablar(`Atención equipo de sorting. Se acaban de ingresar ${unidades} cajas al área. Mantengamos el ritmo, reacomodemos las estibas de manera estratégica y garanticemos el flujo constante. Nuestra meta es ${fmtMeta(META.meta)} cajas por hora.`);
                     }
                     ultimoIdRegistro = data.ultimo_registro.id;
                 }
