@@ -93,6 +93,9 @@ if ($user_cargo === 'super_admin') {
     </script>
     
     <title>Ware-Pro - Sistema de Gestión</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
@@ -224,28 +227,88 @@ if ($user_cargo === 'super_admin') {
                     </a>
 
 
-                    <?php if ($user_cargo === 'admin' || $user_cargo === 'super_admin'): ?>
-                        <div class="menu-divider"></div>
+                    <?php
+                    $es_gestor = in_array($user_cargo, ['super_admin', 'admin', 'lider', 'supervisor'], true);
+                    $es_admin = in_array($user_cargo, ['super_admin', 'admin'], true);
+                    // Página de compensación propia según el cargo
+                    $mi_compensacion = [
+                        'auxiliar'    => '/modules/personal/c_auxiliar.php',
+                        'verificador' => '/modules/personal/c_verificador.php',
+                        'operador'    => '/modules/personal/c_opm.php',
+                    ][$user_cargo] ?? null;
+                    ?>
+                    <div class="menu-divider"></div>
 
+                    <div class="menu-item-container">
+                        <a href="#" class="menu-item" onclick="toggleSubmenu(event, 'seguimientoSubmenu')">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Seguimiento</span>
+                            <i class="fas fa-chevron-down submenu-icon" style="margin-left: auto;"></i>
+                        </a>
+                        <div class="submenu" id="seguimientoSubmenu">
+                            <a href="<?php echo BASE_URL; ?>/modules/workstations/index.php" class="menu-item sub-item">
+                                <i class="fas fa-tv"></i>
+                                <span>Workstations</span>
+                            </a>
+                            <a href="<?php echo BASE_URL; ?>/modules/reportes/indicadores_turno.php" class="menu-item sub-item">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>Indicadores por turno</span>
+                            </a>
+                            <a href="<?php echo BASE_URL; ?>/modules/reportes/metas.php" class="menu-item sub-item">
+                                <i class="fas fa-bullseye"></i>
+                                <span>Metas</span>
+                            </a>
+                            <?php if ($mi_compensacion): ?>
+                                <a href="<?php echo BASE_URL . $mi_compensacion; ?>" class="menu-item sub-item">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                    <span>Mi compensación</span>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <?php if ($es_gestor): ?>
+                        <div class="menu-item-container">
+                            <a href="#" class="menu-item" onclick="toggleSubmenu(event, 'compensacionSubmenu')">
+                                <i class="fas fa-coins"></i>
+                                <span>Compensación variable</span>
+                                <i class="fas fa-chevron-down submenu-icon" style="margin-left: auto;"></i>
+                            </a>
+                            <div class="submenu" id="compensacionSubmenu">
+                                <?php if ($es_admin): ?>
+                                    <a href="<?php echo BASE_URL; ?>/modules/personal/compensacion_config.php" class="menu-item sub-item">
+                                        <i class="fas fa-sliders-h"></i>
+                                        <span>Configurar montos</span>
+                                    </a>
+                                <?php endif; ?>
+                                <a href="<?php echo BASE_URL; ?>/modules/personal/c_auxiliar.php" class="menu-item sub-item">
+                                    <i class="fas fa-user-check"></i>
+                                    <span>Auxiliares</span>
+                                </a>
+                                <a href="<?php echo BASE_URL; ?>/modules/personal/c_verificador.php" class="menu-item sub-item">
+                                    <i class="fas fa-user-shield"></i>
+                                    <span>Verificadores</span>
+                                </a>
+                                <a href="<?php echo BASE_URL; ?>/modules/personal/c_opm.php" class="menu-item sub-item">
+                                    <i class="fas fa-truck-loading"></i>
+                                    <span>Operadores de montacarga</span>
+                                </a>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($es_admin): ?>
                         <div class="menu-item-container">
                             <a href="#" class="menu-item" onclick="toggleSubmenu(event, 'metasSubmenu')">
-                                <i class="fas fa-bullseye"></i>
+                                <i class="fas fa-warehouse"></i>
                                 <span>Almacen</span>
                                 <i class="fas fa-chevron-down submenu-icon" style="margin-left: auto;"></i>
                             </a>
                             <div class="submenu" id="metasSubmenu">
-                                <a href="<?php echo BASE_URL; ?>/modules/reportes/metas.php" class="menu-item sub-item">
-                                    <i class="fas fa-bullseye"></i>
-                                    <span>metas</span>
-                                </a>
-                                 <a href="<?php echo BASE_URL; ?>/modules/reportes/tablero_admin.php" class="menu-item sub-item">
+                                <a href="<?php echo BASE_URL; ?>/modules/reportes/tablero_admin.php" class="menu-item sub-item">
                                     <i class="fas fa-bullseye"></i>
                                     <span>Tableros Digitales</span>
                                 </a>
-
-
-
-
                             </div>
                         </div>
                     <?php endif; ?>
@@ -262,6 +325,10 @@ if ($user_cargo === 'super_admin') {
 </header>
 
 <style>
+/* El header no depende de los estilos de cada página: tipografía, márgenes y box-sizing propios */
+body { margin: 0; }
+.main-header { font-family: 'Poppins', sans-serif; line-height: normal; }
+.main-header *, .main-header *::before, .main-header *::after { box-sizing: border-box; }
 
 .submenu {
     display: none;

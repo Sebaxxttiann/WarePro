@@ -1,8 +1,11 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
+$meta = wsMeta($pdo, $operacion_id, 'Lavado', 17, 24); // cj/h -> unidades (24 por caja)
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -12,54 +15,55 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(unidades) as total_unidades 
             FROM ows_reempaque 
-            WHERE actividad = 'LAVADO' AND DATE(fecha) = CURDATE() 
+            WHERE operacion_id = ? AND actividad = 'LAVADO' AND DATE(fecha) = CURDATE() 
             GROUP BY HOUR(hora) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(SUM(unidades) / COUNT(DISTINCT HOUR(hora)), 2) as promedio_diario
             FROM ows_reempaque 
-            WHERE actividad = 'LAVADO' AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
+            WHERE operacion_id = ? AND actividad = 'LAVADO' AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
 
         $stmt_ranking = $pdo->prepare("
             SELECT u.nombre as colaborador, SUM(o.unidades) as total_unidades
             FROM ows_reempaque o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.actividad = 'LAVADO' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
+            WHERE o.operacion_id = ? AND o.actividad = 'LAVADO' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
             GROUP BY u.id
             ORDER BY total_unidades DESC
             LIMIT 5
         ");
-        $stmt_ranking->execute();
+        $stmt_ranking->execute([$operacion_id]);
         $ranking = $stmt_ranking->fetchAll();
 
         $stmt_ultimo = $pdo->prepare("
             SELECT o.id, u.nombre as colaborador, o.unidades 
             FROM ows_reempaque o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.actividad = 'LAVADO'
+            WHERE o.operacion_id = ? AND o.actividad = 'LAVADO'
             ORDER BY o.id DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
             'sic_diario' => $sic_diario,
             'tendencia_mes' => $tendencia_mes,
             'ranking' => $ranking,
-            'ultimo_registro' => $ultimo_registro
-        ]);
+            'ultimo_registro' => $ultimo_registro,
+            'meta' => $meta
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -69,7 +73,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Lavado CD Cúcuta</title>
+    <title>Workstation - Lavado <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -177,7 +181,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - LAVADO CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - LAVADO <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -191,8 +196,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
                 <div class="card-header">META</div>
                 <div class="meta-content">
-                    <div class="highlight">17 CAJAS / HORA</div>
-                    <div class="sub-text">408 UNIDADES / HORA</div>
+                    <div class="highlight" id="meta-cajas"><?= wsNum($meta['meta']) ?> CAJAS / HORA</div>
+                    <div class="sub-text" id="meta-unidades"><?= wsNum($meta['umbral']) ?> UNIDADES / HORA</div>
                     <div class="no-data" id="estado-meta">Esperando datos...</div>
                 </div>
                 <div class="riesgos-area">
@@ -260,7 +265,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>
@@ -270,16 +275,34 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <script>
         lucide.createIcons();
 
+        // Meta de la operación (tabla metas): META.meta = cj/h, META.umbral = unidades/h (cj × 24)
+        let META = <?= json_encode($meta, JSON_INVALID_UTF8_SUBSTITUTE) ?>;
+        let metaFirma = JSON.stringify(META);
+
+        function limiteRojo(m) { return m.umbral_disparador !== null ? m.umbral_disparador : Math.round(m.umbral * 0.674); }
+        function bandasMeta(m) {
+            const rojo = limiteRojo(m);
+            return [
+                { from: 0, to: rojo, color: '#ff4d4d' },
+                { from: rojo, to: m.umbral, color: '#ffeb3b' },
+                { from: m.umbral, to: 1000000, color: '#32cd32' }
+            ];
+        }
+        function fmtMeta(n) { return Number(n).toLocaleString('es-CO', { maximumFractionDigits: 1 }); }
+        function aplicarMeta(m) {
+            META = m;
+            document.getElementById('meta-cajas').textContent = fmtMeta(m.meta) + ' CAJAS / HORA';
+            document.getElementById('meta-unidades').textContent = fmtMeta(m.umbral) + ' UNIDADES / HORA';
+            if (chartDiario) chartDiario.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+            if (chartMes) chartMes.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+        }
+
         const yAxisConfig = {
-            min: 200, 
-            max: 800, 
-            showEmpty: true, 
+            min: 200,
+            max: 800,
+            showEmpty: true,
             title: { text: 'UNIDADES', style: { fontWeight: 'bold', fontFamily: 'Poppins' } },
-            plotBands: [
-                { from: 0, to: 275, color: '#ff4d4d' },     
-                { from: 275, to: 400, color: '#ffeb3b' },   
-                { from: 400, to: 10000, color: '#32cd32' }  
-            ],
+            plotBands: bandasMeta(META),
             gridLineWidth: 0,
             labels: { style: { fontWeight: 'bold', color: '#000', fontFamily: 'Poppins' } }
         };
@@ -324,6 +347,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
                 if (data.error) return;
 
+                if (data.meta && JSON.stringify(data.meta) !== metaFirma) {
+                    metaFirma = JSON.stringify(data.meta);
+                    aplicarMeta(data.meta);
+                }
+
                 let labelsDiario = data.sic_diario.map(d => d.hora_dia + "h");
                 let datosDiario = data.sic_diario.map(d => Number(d.total_unidades));
                 
@@ -367,10 +395,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     divMeta.innerHTML = `<span style="color:#000;">Último reg: <b>${unidades}</b></span>`;
 
                     if (ultimoIdRegistro !== 0) { 
-                        if (unidades >= 408) {
+                        if (unidades >= META.umbral) {
                             hablar(`¡Excelente! Felicitaciones ${nombre}, cumpliste con la productividad, registrando ${unidades} unidades lavadas. Sigue así.`);
                         } else {
-                            let faltantes = 408 - unidades;
+                            let faltantes = META.umbral - unidades;
                             hablar(`Atención ${nombre}, no alcanzaste la meta. Registraste ${unidades} unidades y te faltaron ${faltantes} unidades. Recuerda tomar las acciones correctivas que se encuentran en la esquina inferior izquierda para mejorar tu productividad. ¡Vamos que sí se puede recuperar el ritmo!`);
                         }
                     }

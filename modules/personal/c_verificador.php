@@ -1,42 +1,45 @@
 <?php
 include '../../core/config.php';
-include '../../core/header.php';
+require_once '../../core/compensacion.php';
 
 verificarLogin();
 
-$nombre_usuario = $_SESSION['nombre']; 
+$nombre_usuario = $_SESSION['nombre'];
 $cargoUsuario = $_SESSION['cargo'] ?? '';
+$operacion_id = (int)getOperacionActiva();
+$puede_administrar_verificador = in_array($cargoUsuario, ['super_admin', 'admin', 'lider'], true);
 $mes_actual = date('m');
 $anio_actual = date('Y');
 $mes_anio_str = $anio_actual . '-' . $mes_actual;
 
+// Se procesa antes de imprimir el header para que la redirección funcione.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cambiar_bloqueo']) && $puede_administrar_verificador) {
+    $nuevo_estado = (int)$_POST['estado_bloqueo'] ? 1 : 0;
+    $stmt = $pdo->prepare("INSERT INTO config_bloqueo (mes_anio, operacion_id, cumple) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE cumple = ?");
+    $stmt->execute([$mes_anio_str, $operacion_id, $nuevo_estado, $nuevo_estado]);
+    header("Location: c_verificador.php");
+    exit();
+}
 
-$dia_actual = (int)date('j'); 
-$dias_habiles_total = 25;
+include '../../core/header.php';
+
+$compensacion_verificador = obtenerCompensacion($pdo, $operacion_id, 'verificador');
+$stmtOp = $pdo->prepare("SELECT nombre FROM operaciones WHERE id = ?");
+$stmtOp->execute([$operacion_id]);
+$nombre_operacion = $stmtOp->fetchColumn() ?: ('Operación #' . $operacion_id);
+
+$dia_actual = (int)date('j');
+$dias_habiles_total = $compensacion_verificador['dias_habiles'];
 $dias_transcurridos = min($dia_actual, $dias_habiles_total);
 
 $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 $mes_texto = $meses[(int)$mes_actual - 1] . ' ' . $anio_actual;
 
 
-$total_compensacion = 252000;
-$diario_checkin = ($total_compensacion * 0.30) / $dias_habiles_total;  
-$diario_despacho = ($total_compensacion * 0.40) / $dias_habiles_total; 
-$diario_bloqueo = ($total_compensacion * 0.30) / $dias_habiles_total;  
-
-
-$pdo->exec("CREATE TABLE IF NOT EXISTS config_bloqueo (
-    mes_anio VARCHAR(7) PRIMARY KEY,
-    cumple TINYINT(1) DEFAULT 1
-)");
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cambiar_bloqueo']) && ($cargoUsuario === 'admin' || $cargoUsuario === 'lider')) {
-    $nuevo_estado = (int)$_POST['estado_bloqueo'];
-    $stmt = $pdo->prepare("INSERT INTO config_bloqueo (mes_anio, cumple, operacion_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE cumple = ?");
-    $stmt->execute([$mes_anio_str, $nuevo_estado, getOperacionActiva(), $nuevo_estado]);
-    header("Location: c_verificador.php");
-    exit();
-}
+$total_compensacion = $compensacion_verificador['monto_variable'];
+$diario_checkin = ($total_compensacion * 0.30) / $dias_habiles_total;
+$diario_despacho = ($total_compensacion * 0.40) / $dias_habiles_total;
+$diario_bloqueo = ($total_compensacion * 0.30) / $dias_habiles_total;
 
 $stmt = $pdo->prepare("SELECT cumple FROM config_bloqueo WHERE mes_anio = ? AND operacion_id = ?");
 $stmt->execute([$mes_anio_str, getOperacionActiva()]);
@@ -186,7 +189,7 @@ $porcentaje_salud = ($maximo_posible_hoy > 0) ? ($dinero_acumulado / $maximo_pos
             <p>Resumen al día de hoy en <strong><?php echo $mes_texto; ?></strong></p>
         </div>
         
-        <?php if ($cargoUsuario === 'admin' || $cargoUsuario === 'lider'): ?>
+        <?php if ($puede_administrar_verificador): ?>
         <div class="admin-controls">
             <h4><i class="fas fa-cog"></i> Control Política de Bloqueo</h4>
             <form method="POST" style="display: flex; gap: 10px; align-items: center;">
@@ -216,6 +219,10 @@ $porcentaje_salud = ($maximo_posible_hoy > 0) ? ($dinero_acumulado / $maximo_pos
             <i class="fas fa-chart-line" style="margin-right: 5px;"></i>
             Ritmo diario actual: $<?php echo number_format($tasa_diaria_actual, 0, ',', '.'); ?> / día
         </div>
+    </div>
+    <div style="margin: -12px 0 25px 5px; font-size: 0.78rem; color: #888;">
+        <i class="fas fa-info-circle"></i> Configurado para <?php echo htmlspecialchars($nombre_operacion); ?>:
+        variable $<?php echo number_format($total_compensacion, 0, ',', '.'); ?>, <?php echo $dias_habiles_total; ?> días hábiles.
     </div>
 
     <div class="cards-grid">

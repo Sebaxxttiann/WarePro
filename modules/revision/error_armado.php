@@ -965,7 +965,7 @@ try {
                                 <i class="fas fa-user-check"></i>
                                 Verificador que Reporta
                             </label>
-                            <input type="text" id="verificador_reporta" name="verificador_reporta" placeholder="Nombre del verificador" required>
+                            <select id="verificador_reporta" name="verificador_reporta" required data-person-select data-cargos="verificador" data-placeholder="Seleccionar verificador"></select>
                         </div>
                     </div>
                 </div>
@@ -983,7 +983,7 @@ try {
                                 <i class="fas fa-user"></i>
                                 Colaborador que Comete el Error
                             </label>
-                            <input type="text" id="colaborador_error_<?php echo $i; ?>" name="colaborador_error_<?php echo $i; ?>" placeholder="Nombre del colaborador">
+                            <select id="colaborador_error_<?php echo $i; ?>" name="colaborador_error_<?php echo $i; ?>" data-person-select data-cargos="auxiliar" data-placeholder="Seleccionar colaborador"></select>
                         </div>
 
                         <div class="form-group">
@@ -1401,4 +1401,5 @@ try {
         });
     }
 </script>
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 
