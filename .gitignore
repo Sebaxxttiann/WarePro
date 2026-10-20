@@ -1,2 +1,3 @@
 /vendor/
 /cloudflared-linux-amd64.deb
+/core/google_api_key.php
