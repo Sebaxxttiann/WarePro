@@ -1,0 +1,4 @@
+# Archivos no públicos: llaves, credenciales y similares.
+<FilesMatch "\.(php|json|ini|log|bak|sql)$">
+    Require all denied
+</FilesMatch>
