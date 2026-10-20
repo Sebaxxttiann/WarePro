@@ -1087,7 +1087,7 @@ require_once '../../core/header.php';
 
                         <div class="form-group">
                             <label class="form-label">Nombre</label>
-                            <input type="text" name="nombre" class="form-input" style="text-transform: uppercase;" required>
+                            <select name="nombre" class="form-input" required data-person-select data-placeholder="Seleccionar persona"><?php if (!empty($_SESSION['nombre'])): ?><option value="<?php echo htmlspecialchars($_SESSION['nombre']); ?>" selected><?php echo htmlspecialchars($_SESSION['nombre']); ?></option><?php endif; ?></select>
                         </div>
                     </div>
 
@@ -1501,13 +1501,6 @@ require_once '../../core/header.php';
             if (fechaFin) fechaFin.addEventListener('change', actualizarGrafica);
             if (materialFiltro) materialFiltro.addEventListener('change', actualizarGrafica);
 
-            const nombreInput = document.querySelector('input[name="nombre"]');
-            if (nombreInput) {
-                nombreInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-            }
-
             actualizarGrafica();
             cargarMateriales();
         });
@@ -1599,5 +1592,6 @@ require_once '../../core/header.php';
             }
         }
     </script>
+    <script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 </body>
 </html>

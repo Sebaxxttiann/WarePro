@@ -8,11 +8,6 @@ date_default_timezone_set('America/Bogota');
 $user_cargo          = $_SESSION['cargo']  ?? 'operador';
 $nombre_sesion_activa = $_SESSION['nombre'] ?? 'Usuario';
 
-$sql_usuarios = "SELECT nombre FROM usuarios WHERE activo = 1 AND operacion_id = ? ORDER BY nombre ASC";
-$stmt_usuarios = $pdo->prepare($sql_usuarios);
-$stmt_usuarios->execute([getOperacionActiva()]);
-$lista_usuarios = $stmt_usuarios->fetchAll(PDO::FETCH_COLUMN);
-
 if ($_POST && isset($_POST['accion'])) {
     if ($_POST['accion'] == 'agregar' || $_POST['accion'] == 'editar') {
         try {
@@ -249,7 +244,6 @@ tailwind.config = {
     .swal2-cancel   { background: var(--text-g) !important; border-radius: 8px !important; font-weight: 600 !important; border: none !important; }
 </style>
 
-<?php $usuarios_json = json_encode($lista_usuarios); ?>
 
 <div style="max-width:1400px;margin:0 auto;padding:1rem 0.75rem;">
 
@@ -501,15 +495,7 @@ tailwind.config = {
                     </div>
                     <div>
                         <label class="lbl"><i class="fas fa-user"></i> Auxiliar Entrevistado</label>
-                        <div class="sd" id="dd_aux">
-                            <input type="text" id="search_auxiliar_entrevistado" placeholder="Buscar usuario…" class="fi"
-                                autocomplete="off"
-                                oninput="filterDD('auxiliar_entrevistado')"
-                                onfocus="openDD('auxiliar_entrevistado')"
-                                onblur="blurDD('auxiliar_entrevistado')">
-                            <input type="hidden" id="auxiliar_entrevistado" name="auxiliar_entrevistado">
-                            <ul id="list_auxiliar_entrevistado" class="sdl cscroll"></ul>
-                        </div>
+                        <select id="auxiliar_entrevistado" name="auxiliar_entrevistado" class="fi" data-person-select data-cargos="auxiliar" data-placeholder="Buscar usuario…"></select>
                     </div>
                 </div>
             </div>
@@ -568,8 +554,8 @@ tailwind.config = {
     </div>
 </div>
 
+<script src="<?php echo BASE_URL; ?>/public/js/person-select.js"></script>
 <script>
-const USUARIOS  = <?php echo $usuarios_json; ?>;
 const SUPERVISOR = <?php echo json_encode($nombre_sesion_activa); ?>;
 let currentEditId = null;
 
@@ -583,7 +569,6 @@ function openModal() {
     setNow();
     document.getElementById('supervisor').value = SUPERVISOR;
     document.getElementById('supervisor_visual').value = SUPERVISOR;
-    document.getElementById('search_auxiliar_entrevistado').value = '';
     document.getElementById('auxiliar_entrevistado').value = '';
 }
 function closeModal() {
@@ -616,41 +601,6 @@ function clearPreviews() {
 }
 
 
-function initDD(id) {
-    const ul = document.getElementById('list_'+id);
-    ul.innerHTML = '';
-    USUARIOS.forEach(n => {
-        const li = document.createElement('li');
-        li.textContent = n;
-        li.onmousedown = e => { e.preventDefault(); selectDD(id, n); };
-        ul.appendChild(li);
-    });
-}
-function filterDD(id) {
-    const q = document.getElementById('search_'+id).value.toLowerCase();
-    const ul = document.getElementById('list_'+id);
-    let vis = 0;
-    ul.querySelectorAll('li:not(.nores)').forEach(li => {
-        const show = li.textContent.toLowerCase().includes(q);
-        li.style.display = show ? '' : 'none';
-        if (show) vis++;
-    });
-    const nr = ul.querySelector('.nores');
-    if (vis === 0 && !nr) {
-        const li = document.createElement('li');
-        li.className = 'nores';
-        li.textContent = 'Sin resultados';
-        ul.appendChild(li);
-    } else if (vis > 0 && nr) nr.remove();
-    ul.classList.add('open');
-}
-function openDD(id) { initDD(id); filterDD(id); }
-function blurDD(id) { setTimeout(() => document.getElementById('list_'+id).classList.remove('open'), 160); }
-function selectDD(id, val) {
-    document.getElementById('search_'+id).value = val;
-    document.getElementById(id).value = val;
-    document.getElementById('list_'+id).classList.remove('open');
-}
 
 
 function viewRecord(id) {
@@ -695,7 +645,6 @@ function fillEdit(rec) {
     document.getElementById('supervisor').value = rec['supervisor'] || '';
     document.getElementById('supervisor_visual').value = rec['supervisor'] || '';
     const av = rec['auxiliar_entrevistado'] || '';
-    document.getElementById('search_auxiliar_entrevistado').value = av;
     document.getElementById('auxiliar_entrevistado').value = av;
     ['lavado_unidades','reempaque','staying','sendero','pns','vertimiento'].forEach(c => {
         const img = rec['imagen_'+c];
