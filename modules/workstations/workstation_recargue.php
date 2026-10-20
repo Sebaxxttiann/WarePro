@@ -1,8 +1,11 @@
 <?php
 require_once '../../core/config.php'; 
 
-verificarLogin();
+verificarLogin(); require_once __DIR__ . '/ws_common.php';
 date_default_timezone_set('America/Bogota');
+
+$operacion_id = wsOperacionId();
+$meta = wsMeta($pdo, $operacion_id, 'Recargue T2', 45, 1); // minutos, sentido 'menor'
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     header('Content-Type: application/json');
@@ -13,51 +16,51 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora_final_cargue) as hora_dia, ROUND(AVG(TIME_TO_SEC(tiempo)/60), 1) as promedio_tiempo 
             FROM recargue_t2 
-            WHERE DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
             GROUP BY HOUR(hora_final_cargue) 
             ORDER BY hora_dia ASC
         ");
-        $stmt_diario->execute();
+        $stmt_diario->execute([$operacion_id]);
         $sic_diario = $stmt_diario->fetchAll();
 
         
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(AVG(TIME_TO_SEC(tiempo)/60), 1) as promedio_tiempo
             FROM recargue_t2 
-            WHERE MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estatus = 'Completado'
+            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estatus = 'Completado'
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
-        $stmt_mes->execute();
+        $stmt_mes->execute([$operacion_id]);
         $tendencia_mes = $stmt_mes->fetchAll();
         
         
         $stmt_total = $pdo->prepare("
             SELECT COUNT(*) as total 
             FROM recargue_t2 
-            WHERE DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
         ");
-        $stmt_total->execute();
+        $stmt_total->execute([$operacion_id]);
         $total_atendidos = $stmt_total->fetch()['total'];
 
         
         $stmt_recientes = $pdo->prepare("
             SELECT placa, opm1, estatus, tiempo 
             FROM recargue_t2 
-            WHERE DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
             ORDER BY hora_final_cargue DESC LIMIT 3
         ");
-        $stmt_recientes->execute();
+        $stmt_recientes->execute([$operacion_id]);
         $recientes = $stmt_recientes->fetchAll();
 
         
         $stmt_ultimo = $pdo->prepare("
             SELECT id, placa, opm1, tiempo 
             FROM recargue_t2 
-            WHERE estatus = 'Completado'
+            WHERE operacion_id = ? AND estatus = 'Completado'
             ORDER BY id DESC LIMIT 1
         ");
-        $stmt_ultimo->execute();
+        $stmt_ultimo->execute([$operacion_id]);
         $ultimo_registro = $stmt_ultimo->fetch();
 
         echo json_encode([
@@ -65,11 +68,12 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             'tendencia_mes' => $tendencia_mes,
             'total_atendidos' => $total_atendidos,
             'recientes' => $recientes,
-            'ultimo_registro' => $ultimo_registro
-        ]);
+            'ultimo_registro' => $ultimo_registro,
+            'meta' => $meta
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     } catch (PDOException $e) {
-        echo json_encode(['error' => $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -79,7 +83,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workstation - Recargue CD Cúcuta</title>
+    <title>Workstation - Recargue <?= wsNombreCD($pdo, $operacion_id) ?></title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,7 +164,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
     <div class="header-container">
         <img src="https://www.bavaria.co/sites/g/files/seuoyk1666/files/inline-images/Logo_Tipo_Horizontal.png" alt="Bavaria" style="height: 40px; object-fit: contain;">
-        <h1>WORKSTATION - RECARGUE CD CÚCUTA</h1>
+        <?= wsBotonVolver() ?>
+        <h1>WORKSTATION - RECARGUE <?= wsTituloCD($pdo, $operacion_id) ?></h1>
         <div style="display: flex; align-items: center;">
             <div id="estado-sistema" class="estado-sistema" onclick="activarSistemaSilencioso()">
                 <i data-lucide="mic-off" style="width: 18px; height: 18px;"></i> INICIANDO...
@@ -197,6 +202,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="atendidos-box">
                     <div class="atendidos-title">TOTAL ATENDIDOS</div>
                     <div class="atendidos-circle" id="val-atendidos">0</div>
+                    <div class="atendidos-title" id="meta-recargue" style="margin-top: 8px; margin-bottom: 0;">META &le; <?= wsNum($meta['meta']) ?> MIN</div>
                 </div>
                 
                 <div class="riesgos-area">
@@ -256,7 +262,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 <div class="qr-list">
                     <p><i data-lucide="check-circle-2"></i> Documentos y estándares</p>
                     <p><i data-lucide="check-circle-2"></i> Checklist de herramientas</p>
-                    <p><i data-lucide="check-circle-2"></i> Página del CD Cúcuta</p>
+                    <p><i data-lucide="check-circle-2"></i> Página del <?= wsNombreCD($pdo, $operacion_id) ?></p>
                     <p><i data-lucide="check-circle-2"></i> Programa Buenas Prácticas</p>
                 </div>
             </div>
@@ -265,6 +271,27 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 
 <script>
         lucide.createIcons();
+
+        // Meta de la operación (tabla metas 'Recargue T2'): minutos, sentido 'menor' (cumple si tiempo <= meta).
+        let META = <?= json_encode($meta, JSON_INVALID_UTF8_SUBSTITUTE) ?>;
+        let metaFirma = JSON.stringify(META);
+
+        function limiteRojo(m) { return m.disparador !== null ? m.disparador : Math.round(m.meta * 1.2); }
+        function bandasMeta(m) {
+            const rojo = Math.max(m.meta, limiteRojo(m));
+            return [
+                { from: 0, to: m.meta, color: '#32cd32' },
+                { from: m.meta, to: rojo, color: '#ffeb3b' },
+                { from: rojo, to: 9999, color: '#ff4d4d' }
+            ];
+        }
+        function fmtMeta(n) { return Number(n).toLocaleString('es-CO', { maximumFractionDigits: 1 }); }
+        function aplicarMeta(m) {
+            META = m;
+            document.getElementById('meta-recargue').innerHTML = 'META &le; ' + fmtMeta(m.meta) + ' MIN';
+            if (chartDiario) chartDiario.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+            if (chartMes) chartMes.yAxis[0].update({ plotBands: bandasMeta(m) }, false);
+        }
 
         function getChartOptions() {
             return {
@@ -281,12 +308,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     min: 0, 
                     showEmpty: true, 
                     title: { text: 'TIEMPO PROMEDIO (MIN)', style: { fontWeight: 'bold', fontFamily: 'Poppins', fontSize: '10px' } },
-                    plotBands: [
-    
-    { from: 0, to: 26, color: '#32cd32' },      
-    { from: 26, to: 33, color: '#ffeb3b' },     
-    { from: 33, to: 9999, color: '#ff4d4d' }    
-],
+                    plotBands: bandasMeta(META),
                     gridLineWidth: 0,
                     labels: { style: { fontWeight: 'bold', color: '#000', fontFamily: 'Poppins' } }
                 },
@@ -319,6 +341,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                 const data = await res.json();
 
                 if (data.error) return;
+
+                if (data.meta && JSON.stringify(data.meta) !== metaFirma) {
+                    metaFirma = JSON.stringify(data.meta);
+                    aplicarMeta(data.meta);
+                }
 
                 
                 document.getElementById('val-atendidos').innerText = data.total_atendidos || 0;
@@ -382,10 +409,10 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
                     let minutos = parseInt(partes[0]) * 60 + parseInt(partes[1]);
 
                     if (ultimoIdRegistro !== 0) { 
-                        if (minutos <= 45) {
-                            hablar(`¡Excelente equipo de recargue! Vehículo placa ${placa} finalizado por ${opm}. Tiempo registrado: ${minutos} minutos, cumpliendo la meta de los 45 minutos. Sigan así.`);
+                        if (minutos <= META.meta) {
+                            hablar(`¡Excelente equipo de recargue! Vehículo placa ${placa} finalizado por ${opm}. Tiempo registrado: ${minutos} minutos, cumpliendo la meta de los ${fmtMeta(META.meta)} minutos. Sigan así.`);
                         } else {
-                            let exceso = minutos - 45;
+                            let exceso = Math.round((minutos - META.meta) * 10) / 10;
                             hablar(`Atención equipo de recargue. Vehículo placa ${placa} finalizado por ${opm}. Tiempo registrado: ${minutos} minutos. Nos excedimos de la meta por ${exceso} minutos. Revisemos los procesos para optimizar el tiempo.`);
                         }
                     }
