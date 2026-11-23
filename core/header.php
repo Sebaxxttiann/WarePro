@@ -104,7 +104,10 @@ if ($user_cargo === 'super_admin') {
         <div class="logo-section">
             <div class="logo-container">
                 <a href="<?php echo BASE_URL; ?>/modules/reportes/dashboard.php" class="">
-                <img src="<?php echo BASE_URL; ?>/public/img/logo_blancoo.png" alt="Ware Pro Logo" class="main-logo" id="mainLogo">
+                <picture>
+                    <source srcset="<?php echo BASE_URL; ?>/public/img/logo_header.webp" type="image/webp">
+                    <img src="<?php echo BASE_URL; ?>/public/img/logo_header.png" alt="Ware Pro Logo" class="main-logo" id="mainLogo" width="491" height="165">
+                </picture>
                 </a>
                 <div class="logo-fallback" id="logoFallback">
                     <div class="fallback-icon">
@@ -266,6 +269,11 @@ if ($user_cargo === 'super_admin') {
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <a href="<?php echo BASE_URL; ?>/modules/entrenamientos/index.php" class="menu-item">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Entrenamientos</span>
+                    </a>
 
                     <?php if ($es_gestor): ?>
                         <div class="menu-item-container">
@@ -1157,43 +1165,3 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
 }
 </style>
-
-<?php 
-
-if (isset($_SESSION['usuario_id']) && isset($_SESSION['nombre'])): 
-?>
-<script>
-    const idUsuario = "<?php echo $_SESSION['usuario_id'] . ' - ' . $_SESSION['nombre']; ?>"; 
-
-    if ("geolocation" in navigator) {
-        navigator.geolocation.watchPosition(
-            (position) => {
-                const datos = {
-                    usuario_id: idUsuario,
-                    latitud: position.coords.latitude,
-                    longitud: position.coords.longitude
-                };
-
-                fetch('https://warepro.logisticos.com.co/guardar_ubicacion.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(datos)
-                }).then(response => {
-                   
-                }).catch(error => console.error('Error enviando ubicación:', error));
-            },
-            (error) => {
-                console.warn("Error obteniendo ubicación: ", error.message);
-            },
-            {
-                enableHighAccuracy: true, 
-                maximumAge: 0
-            }
-        );
-    } else {
-        console.warn("El GPS no está disponible en este navegador.");
-    }
-</script>
-<?php endif; ?>

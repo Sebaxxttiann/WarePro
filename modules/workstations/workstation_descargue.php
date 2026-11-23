@@ -7,6 +7,7 @@ date_default_timezone_set('America/Bogota');
 $operacion_id = wsOperacionId();
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('descargue', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -15,7 +16,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(fecha_hora_fin) as hora_dia, COUNT(*) as total_vehiculos 
             FROM descargue 
-            WHERE operacion_id = ? AND DATE(fecha_hora_fin) = CURDATE() AND estado = 'finalizado'
+            WHERE operacion_id = ? AND fecha_hora_fin >= CURDATE() AND fecha_hora_fin < CURDATE() + INTERVAL 1 DAY AND estado = 'finalizado'
             GROUP BY HOUR(fecha_hora_fin) 
             ORDER BY hora_dia ASC
         ");
@@ -26,7 +27,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha_hora_fin) as dia, COUNT(*) as total_diario
             FROM descargue 
-            WHERE operacion_id = ? AND MONTH(fecha_hora_fin) = MONTH(CURDATE()) AND YEAR(fecha_hora_fin) = YEAR(CURDATE()) AND estado = 'finalizado'
+            WHERE operacion_id = ? AND fecha_hora_fin >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha_hora_fin < LAST_DAY(CURDATE()) + INTERVAL 1 DAY AND estado = 'finalizado'
             GROUP BY DATE(fecha_hora_fin) 
             ORDER BY fecha_hora_fin ASC
         ");
@@ -50,7 +51,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_recientes = $pdo->prepare("
             SELECT placa, estado 
             FROM descargue 
-            WHERE operacion_id = ? AND DATE(fecha_hora_inicio) = CURDATE() 
+            WHERE operacion_id = ? AND fecha_hora_inicio >= CURDATE() AND fecha_hora_inicio < CURDATE() + INTERVAL 1 DAY 
             ORDER BY fecha_hora_inicio DESC LIMIT 4
         ");
         $stmt_recientes->execute([$operacion_id]);
@@ -162,6 +163,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -460,7 +462,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             setInterval(moverPantallaMicro, 30000); 
         });

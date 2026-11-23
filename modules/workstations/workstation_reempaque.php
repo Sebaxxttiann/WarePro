@@ -10,6 +10,7 @@ $operacion_id = wsOperacionId();
 $meta = wsMeta($pdo, $operacion_id, 'Reempaque', 20, 24);
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('reempaque', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -17,7 +18,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(unidades) as total_unidades
             FROM ows_reempaque
-            WHERE operacion_id = ? AND actividad = 'REEMPAQUE' AND DATE(fecha) = CURDATE()
+            WHERE operacion_id = ? AND actividad = 'REEMPAQUE' AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY
             GROUP BY HOUR(hora)
             ORDER BY hora_dia ASC
         ");
@@ -27,7 +28,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(SUM(unidades) / COUNT(DISTINCT HOUR(hora)), 2) as promedio_diario
             FROM ows_reempaque
-            WHERE operacion_id = ? AND actividad = 'REEMPAQUE' AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
+            WHERE operacion_id = ? AND actividad = 'REEMPAQUE' AND fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY
             GROUP BY DATE(fecha)
             ORDER BY fecha ASC
         ");
@@ -38,7 +39,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             SELECT u.nombre as colaborador, SUM(o.unidades) as total_unidades
             FROM ows_reempaque o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.operacion_id = ? AND o.actividad = 'REEMPAQUE' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
+            WHERE o.operacion_id = ? AND o.actividad = 'REEMPAQUE' AND o.fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND o.fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY
             GROUP BY u.id
             ORDER BY total_unidades DESC
             LIMIT 5
@@ -183,6 +184,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -530,7 +532,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             
             

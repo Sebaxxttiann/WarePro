@@ -414,15 +414,6 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border-gray">
-                        <?php if (empty($roturas)): ?>
-                            <tr>
-                                <td colspan="9" class="text-center py-12 text-text-gray">
-                                    <i class="fas fa-inbox text-6xl mb-4 block opacity-50"></i>
-                                    <h5 class="text-xl font-semibold text-primary-black mb-2">No hay registros disponibles</h5>
-                                    <p>Comienza agregando tu primera rotura</p>
-                                </td>
-                            </tr>
-                        <?php else: ?>
                             <?php foreach ($roturas as $rotura): ?>
                                 <tr class="hover:bg-light-gray transition-all duration-200 hover:scale-[1.01]">
                                     <td class="p-4" data-order="<?php echo strtotime($rotura['fecha_registro']); ?>">
@@ -476,7 +467,6 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -845,8 +835,12 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
             
             $('#tablaRoturas').DataTable({
                 responsive: true,
+                // Textos en línea (evita una petición extra al CDN). Sin registros, DataTables pinta emptyTable: una fila con colspan rompe el conteo de columnas.
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                    search: 'Buscar:', lengthMenu: 'Mostrar _MENU_ registros', info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Sin registros', infoFiltered: '(filtrado de _MAX_ en total)', zeroRecords: 'No se encontraron resultados',
+                    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+                    emptyTable: '<div class="py-10 text-center"><i class="fas fa-inbox text-5xl mb-3 block opacity-50"></i><b>No hay registros disponibles</b><br><span class="text-sm">Comienza agregando tu primera rotura</span></div>'
                 },
                 order: [[0, 'desc']],
                 pageLength: 10,
@@ -1292,4 +1286,4 @@ $precios = $stmt_precios->fetchAll(PDO::FETCH_ASSOC);
         }
     </script>
 </body>
-</html>
+</html>

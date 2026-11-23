@@ -23,6 +23,69 @@ function wsOperacionNombre(PDO $pdo, int $op): string {
     return $cache[$op] = ($nombre !== false && $nombre !== null && $nombre !== '') ? (string)$nombre : 'Sin operación';
 }
 
+/** Segundos que se reutiliza la respuesta de un tablero antes de volver a consultar la base de datos. */
+const WS_CACHE_TTL = 30;
+/** Cada cuánto refrescan los tableros desde el navegador (milisegundos). */
+const WS_POLL_MS = 30000;
+
+/**
+ * Caché compartido para los endpoints ?ajax=1 de los tableros.
+ *
+ * Todas las pantallas que miran la misma workstation de la misma operación reciben la misma
+ * respuesta guardada en disco, así la base de datos se consulta como máximo una vez cada
+ * WS_CACHE_TTL segundos sin importar cuántas TVs estén abiertas. Responde 304 (sin cuerpo)
+ * cuando el navegador ya tiene esa versión.
+ *
+ * Uso: llamar al inicio del bloque ajax. Si hay caché vigente responde y termina; si no,
+ * deja correr el script y guarda su salida JSON al final.
+ */
+function wsCacheAjax(string $clave, int $op): void {
+    // La sesión ya se validó: liberarla evita que las peticiones del mismo usuario se bloqueen entre sí.
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+
+    $dir = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'warepro_ws';
+    if (!is_dir($dir)) @mkdir($dir, 0700, true);
+    $archivo = $dir . DIRECTORY_SEPARATOR . preg_replace('/[^a-z0-9_]/i', '', $clave) . '_' . $op . '.json';
+
+    $enviar = function (string $json): void {
+        $etag = '"' . md5($json) . '"';
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('ETag: ' . $etag);
+        if (trim($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $etag) {
+            http_response_code(304);
+            return;
+        }
+        echo $json;
+    };
+
+    $vigente = is_file($archivo) && (time() - filemtime($archivo)) < WS_CACHE_TTL;
+    if ($vigente && ($json = @file_get_contents($archivo)) !== false) {
+        $enviar($json);
+        exit;
+    }
+
+    // Solo una petición recalcula; las demás reciben la versión anterior mientras tanto.
+    $lock = @fopen($archivo . '.lock', 'c');
+    if ($lock && !flock($lock, LOCK_EX | LOCK_NB) && is_file($archivo)) {
+        $enviar((string)@file_get_contents($archivo));
+        exit;
+    }
+
+    ob_start();
+    register_shutdown_function(function () use ($archivo, $lock, $enviar) {
+        $json = (string)ob_get_clean();
+        $datos = json_decode($json, true);
+        if (is_array($datos) && !isset($datos['error'])) {
+            $tmp = $archivo . '.' . getmypid() . '.tmp';
+            if (@file_put_contents($tmp, $json) !== false) @rename($tmp, $archivo);
+        }
+        if ($lock) { flock($lock, LOCK_UN); fclose($lock); }
+        header_remove('Content-Type');
+        $enviar($json);
+    });
+}
+
 /** Escapa para HTML tolerando bytes no UTF-8. */
 function wsE($texto): string {
     return htmlspecialchars((string)$texto, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');

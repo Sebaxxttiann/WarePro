@@ -8,6 +8,7 @@ $operacion_id = wsOperacionId();
 $meta = wsMeta($pdo, $operacion_id, 'Recargue T2', 45, 1); // minutos, sentido 'menor'
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('recargue', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -16,7 +17,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora_final_cargue) as hora_dia, ROUND(AVG(TIME_TO_SEC(tiempo)/60), 1) as promedio_tiempo 
             FROM recargue_t2 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY AND estatus = 'Completado'
             GROUP BY HOUR(hora_final_cargue) 
             ORDER BY hora_dia ASC
         ");
@@ -27,7 +28,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(AVG(TIME_TO_SEC(tiempo)/60), 1) as promedio_tiempo
             FROM recargue_t2 
-            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND estatus = 'Completado'
+            WHERE operacion_id = ? AND fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY AND estatus = 'Completado'
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
@@ -38,7 +39,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_total = $pdo->prepare("
             SELECT COUNT(*) as total 
             FROM recargue_t2 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY AND estatus = 'Completado'
         ");
         $stmt_total->execute([$operacion_id]);
         $total_atendidos = $stmt_total->fetch()['total'];
@@ -47,7 +48,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_recientes = $pdo->prepare("
             SELECT placa, opm1, estatus, tiempo 
             FROM recargue_t2 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND estatus = 'Completado'
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY AND estatus = 'Completado'
             ORDER BY hora_final_cargue DESC LIMIT 3
         ");
         $stmt_recientes->execute([$operacion_id]);
@@ -159,6 +160,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -486,7 +488,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             setInterval(moverPantallaMicro, 30000); 
         });
