@@ -147,7 +147,7 @@ $url_paginacion = '?' . ($query_string ? $query_string . '&' : '') . 'pagina=';
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 py-8">
 
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-yellow-200">
+        <div class="flex flex-col md:flex-row justify-between items-center wp-hero">
             <div>
                 <div class="flex items-center gap-3 mb-1">
                     <div class="w-2 h-8 gold-bg rounded-full"></div>

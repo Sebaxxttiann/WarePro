@@ -19,7 +19,7 @@ $anio = (int)$m[1];
 $mes = (int)$m[2];
 $M = dpoMatrizMes($pdo, $op, $anio, $mes);
 
-$stmt = $pdo->prepare("SELECT COUNT(*) AS n, COALESCE(SUM(peso_bytes), 0) AS peso, COUNT(DISTINCT colaborador_id) AS personas
+$stmt = $pdo->prepare("SELECT COUNT(*) AS n, COUNT(DISTINCT colaborador_id) AS personas
                        FROM dpo_registros WHERE operacion_id = ? AND fecha BETWEEN ? AND ?");
 $stmt->execute([$op, sprintf('%04d-%02d-01', $anio, $mes), sprintf('%04d-%02d-%02d', $anio, $mes, $M['dias_mes'])]);
 $resumen = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -107,9 +107,9 @@ require_once '../../core/header.php';
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/entrenamientos.css">
 <style>
-    .cal-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
-    .cal-kpi { background: #fff; border-radius: 16px; padding: 16px 18px; box-shadow: 0 6px 22px rgba(0,0,0,.06); display: flex; align-items: center; gap: 14px; }
-    .cal-kpi .ico { width: 46px; height: 46px; border-radius: 13px; background: #111; color: #FFD700; display: grid; place-items: center; font-size: 1.15rem; flex-shrink: 0; }
+    .cal-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+    .cal-kpi { background: #fff; border-radius: var(--wp-radio-lg); padding: 1.25rem 1.4rem; box-shadow: var(--wp-sombra); border: 1px solid var(--wp-borde); border-left: 4px solid var(--wp-oro); display: flex; align-items: center; gap: 1rem; }
+    .cal-kpi .ico { width: 50px; height: 50px; border-radius: 14px; background: var(--wp-grad-negro); color: var(--wp-oro); display: grid; place-items: center; font-size: 1.2rem; flex-shrink: 0; }
     .cal-kpi b { display: block; font-size: 1.5rem; line-height: 1.1; }
     .cal-kpi span { font-size: .76rem; color: #777; font-weight: 600; }
     .cal-kpi.anillo .ico { background: conic-gradient(var(--c, #FFD700) calc(var(--p, 0) * 1%), #eee 0); color: #111; position: relative; }
@@ -176,21 +176,22 @@ require_once '../../core/header.php';
     .cel-reg .tx { padding: 8px 10px; font-size: .76rem; }
     .cel-reg .tx b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cel-reg .bt { display: flex; gap: 6px; padding: 0 10px 10px; }
-    .cel-reg .bt .en-btn { flex: 1; }
-    @media (max-width: 640px) { .cal .cal-nom { min-width: 130px; } .ld-add { flex-direction: column; } .ld-add .en-btn { width: 100%; } }
+    .cel-reg .bt .wp-btn { flex: 1; }
+    .cel-acciones { display: flex; gap: .5rem; flex-wrap: wrap; }
+    @media (max-width: 640px) { .cal .cal-nom { min-width: 130px; } .ld-add { flex-direction: column; } .ld-add .wp-btn { width: 100%; } }
 </style>
 
-<div class="en-wrap">
-    <section class="en-hero">
-        <div class="en-hero-top">
+<div class="wp-page">
+    <section class="wp-hero">
+        <div class="wp-hero-top">
             <div>
                 <h1><i class="fas fa-calendar-check"></i> Calendario DPO</h1>
                 <p>Un día cumple cuando el líder registra al menos un entrenamiento. Domingos, festivos y días no laborables no cuentan.</p>
             </div>
-            <div class="en-acciones">
-                <button type="button" class="en-btn en-btn-gold" id="btnLideres"><i class="fas fa-users-cog"></i> Líderes</button>
-                <a class="en-chip" href="dpo_evidencias.php"><i class="fas fa-images"></i> Evidencias</a>
-                <a class="en-chip" href="index.php"><i class="fas fa-arrow-left"></i> Entrenamientos</a>
+            <div class="wp-hero-acciones">
+                <button type="button" class="wp-btn wp-btn-primary" id="btnLideres"><i class="fas fa-users-cog"></i> Líderes</button>
+                <a class="wp-btn wp-btn-ghost wp-btn-sm" href="dpo_evidencias.php"><i class="fas fa-images"></i> Evidencias</a>
+                <a class="wp-btn wp-btn-ghost wp-btn-sm" href="index.php"><i class="fas fa-arrow-left"></i> Entrenamientos</a>
             </div>
         </div>
     </section>
@@ -199,19 +200,18 @@ require_once '../../core/header.php';
     <div class="cal-kpis">
         <div class="cal-kpi anillo" id="kpiAnillo" style="--p:<?= (int)$g['pct'] ?>;--c:<?= $colorG ?>"><div class="ico"><i class="fas fa-bullseye"></i></div><div><b id="kpiPct"><?= pctTxt($g['pct']) ?></b><span>Cumplimiento del mes</span></div></div>
         <div class="cal-kpi"><div class="ico"><i class="fas fa-user-tie"></i></div><div><b id="kpiLideres"><?= count($M['lideres']) ?></b><span>Líderes en seguimiento</span></div></div>
-        <div class="cal-kpi"><div class="ico"><i class="fas fa-photo-video"></i></div><div><b id="kpiRegistros"><?= (int)$resumen['n'] ?></b><span>Registros del mes</span></div></div>
+        <div class="cal-kpi"><div class="ico"><i class="fas fa-camera"></i></div><div><b id="kpiRegistros"><?= (int)$resumen['n'] ?></b><span>Registros del mes</span></div></div>
         <div class="cal-kpi"><div class="ico"><i class="fas fa-user-graduate"></i></div><div><b><?= (int)$resumen['personas'] ?></b><span>Personas entrenadas</span></div></div>
-        <div class="cal-kpi"><div class="ico"><i class="fas fa-hdd"></i></div><div><b><?php $pb = (int)$resumen['peso']; echo $pb >= 1073741824 ? round($pb / 1073741824, 2) . ' GB' : ($pb >= 1048576 ? round($pb / 1048576) . ' MB' : round($pb / 1024) . ' KB'); ?></b><span>Espacio usado en el mes</span></div></div>
     </div>
 
-    <div class="en-card">
+    <div class="wp-card"><div class="wp-card-body">
         <div class="cal-bar">
             <div class="cal-mes">
                 <a href="?mes=<?= $mesAnterior ?>" title="Mes anterior"><i class="fas fa-chevron-left"></i></a>
                 <h2><?= $MESES[$mes] . ' ' . $anio ?></h2>
                 <?php if ($hayMesSiguiente): ?><a href="?mes=<?= $mesSiguiente ?>" title="Mes siguiente"><i class="fas fa-chevron-right"></i></a><?php else: ?><span class="dis"><i class="fas fa-chevron-right"></i></span><?php endif; ?>
             </div>
-            <span class="en-sub" style="margin:0">Clic en un <b>día</b> para marcarlo no laborable · clic en una <b>celda</b> para ver o gestionar</span>
+            <span class="wp-sub" style="margin:0">Clic en un <b>día</b> para marcarlo no laborable · clic en una <b>celda</b> para ver o gestionar</span>
         </div>
         <div class="cal-scroll" id="calScroll"><?php tablaCalendario($M, $LETRA); ?></div>
         <div class="cal-ley">
@@ -223,18 +223,18 @@ require_once '../../core/header.php';
             <span><i style="background:#FFD700"></i>75–99%</span>
             <span><i style="background:#dc2626"></i>&lt; 75%</span>
         </div>
-    </div>
+    </div></div>
 </div>
 
 <!-- Líderes -->
-<div class="en-modal" id="modalLideres" hidden>
-    <div class="en-modal-box">
-        <div class="en-modal-head"><h3><i class="fas fa-users-cog"></i> Líderes DPO</h3><button type="button" class="en-modal-close" data-cerrar>&times;</button></div>
-        <div class="en-modal-body">
-            <p class="en-sub" style="margin-top:0">Los líderes pueden registrar entrenamientos y aparecen en el calendario. Al retirarlos se conserva su historial.</p>
+<div class="wp-modal" id="modalLideres" hidden>
+    <div class="wp-modal-box sm">
+        <div class="wp-modal-head"><h2><i class="fas fa-users-cog"></i> Líderes DPO</h2><button type="button" class="wp-modal-close" data-wp-cerrar>&times;</button></div>
+        <div>
+            <p class="wp-sub" style="margin-top:-1rem">Los líderes pueden registrar entrenamientos y aparecen en el calendario. Al retirarlos se conserva su historial.</p>
             <div class="ld-add">
-                <div><select id="nuevoLider" data-person-select data-value-field="id" data-placeholder="Buscar usuario por nombre o cédula..."></select></div>
-                <button type="button" class="en-btn en-btn-dark" id="btnAgregar"><i class="fas fa-plus"></i> Agregar</button>
+                <div><select id="nuevoLider" class="wp-select" data-person-select data-value-field="id" data-placeholder="Buscar usuario por nombre o cédula..."></select></div>
+                <button type="button" class="wp-btn wp-btn-primary" id="btnAgregar"><i class="fas fa-plus"></i> Agregar</button>
             </div>
             <ul class="ld-lista" id="listaLideres"></ul>
         </div>
@@ -242,20 +242,20 @@ require_once '../../core/header.php';
 </div>
 
 <!-- Celda -->
-<div class="en-modal" id="modalCelda" hidden>
-    <div class="en-modal-box ancho">
-        <div class="en-modal-head"><h3 id="celTitulo"></h3><button type="button" class="en-modal-close" data-cerrar>&times;</button></div>
-        <div class="en-modal-body">
-            <div class="en-acciones" id="celAcciones"></div>
+<div class="wp-modal" id="modalCelda" hidden>
+    <div class="wp-modal-box lg">
+        <div class="wp-modal-head"><h2><i class="fas fa-calendar-day"></i> <span id="celTitulo"></span></h2><button type="button" class="wp-modal-close" data-wp-cerrar>&times;</button></div>
+        <div>
+            <div class="cel-acciones" id="celAcciones"></div>
             <div class="cel-regs" id="celRegs"></div>
         </div>
     </div>
 </div>
 
 <!-- Visor -->
-<div class="en-modal" id="modalVer" hidden style="z-index:2100">
-    <div class="en-modal-box ancho"><div class="en-modal-head"><h3 id="verTitulo"></h3><button type="button" class="en-modal-close" data-cerrar>&times;</button></div>
-        <div class="en-modal-body"><div class="en-visor" id="verVisor"></div></div></div>
+<div class="wp-modal" id="modalVer" hidden style="z-index:1100">
+    <div class="wp-modal-box"><div class="wp-modal-head"><h2><i class="fas fa-image"></i> <span id="verTitulo"></span></h2><button type="button" class="wp-modal-close" data-wp-cerrar>&times;</button></div>
+        <div><div class="en-visor" id="verVisor"></div></div></div>
 </div>
 
 <script>window.WAREPRO_BASE_URL = <?= json_encode(BASE_URL) ?>;</script>
@@ -326,23 +326,22 @@ require_once '../../core/header.php';
         celda = d;
         $('#celTitulo').textContent = d.nom + ' · ' + fmt(d.fecha);
         let acc = '';
-        if (d.estado === 'na') acc += '<button type="button" class="en-btn en-btn-ghost en-btn-sm" data-acc="toggle"><i class="fas fa-undo"></i> Quitar N/A</button>';
-        else if (d.estado !== 'off' && +d.n === 0) acc += '<button type="button" class="en-btn en-btn-ghost en-btn-sm" data-acc="toggle"><i class="fas fa-user-slash"></i> Marcar N/A (vacaciones, incapacidad...)</button>';
-        if (+d.n > 0) acc += '<a class="en-btn en-btn-ghost en-btn-sm" href="dpo_evidencias.php?lider=' + d.lider + '&fecha=' + d.fecha + '"><i class="fas fa-images"></i> Ver en evidencias</a>';
+        if (d.estado === 'na') acc += '<button type="button" class="wp-btn wp-btn-ghost wp-btn-sm" data-acc="toggle"><i class="fas fa-undo"></i> Quitar N/A</button>';
+        else if (d.estado !== 'off' && +d.n === 0) acc += '<button type="button" class="wp-btn wp-btn-ghost wp-btn-sm" data-acc="toggle"><i class="fas fa-user-slash"></i> Marcar N/A (vacaciones, incapacidad...)</button>';
+        if (+d.n > 0) acc += '<a class="wp-btn wp-btn-ghost wp-btn-sm" href="dpo_evidencias.php?lider=' + d.lider + '&fecha=' + d.fecha + '"><i class="fas fa-images"></i> Ver en evidencias</a>';
         $('#celAcciones').innerHTML = acc;
-        $('#celRegs').innerHTML = +d.n > 0 ? '<p class="en-sub">Cargando...</p>' : '<p class="en-sub" style="grid-column:1/-1;margin:14px 0 0">Sin registros este día.</p>';
-        $('#modalCelda').hidden = false;
+        $('#celRegs').innerHTML = +d.n > 0 ? '<p class="wp-sub">Cargando...</p>' : '<p class="wp-sub" style="grid-column:1/-1;margin:14px 0 0">Sin registros este día.</p>';
+        WP.modal.abrir('modalCelda');
         if (+d.n === 0) return;
         try {
             const j = await (await fetch(API + '?action=registros_celda&lider_id=' + d.lider + '&fecha=' + d.fecha, { credentials: 'same-origin' })).json();
             $('#celRegs').innerHTML = j.data.map(r => '<div class="cel-reg">' +
-                '<button type="button" class="en-thumb" data-ver="' + esc(r.archivo) + '" data-tipo="' + r.tipo + '" data-nom="' + esc(r.colaborador) + '">' +
-                (r.miniatura ? '<img loading="lazy" src="' + RAIZ + esc(r.miniatura) + '" alt="">' : '<span class="en-sin"><i class="fas fa-' + (r.tipo === 'video' ? 'film' : 'image') + '"></i></span>') +
-                (r.tipo === 'video' ? '<span class="en-play"><i class="fas fa-play-circle"></i></span>' : '') + '</button>' +
+                '<button type="button" class="en-thumb" data-ver="' + esc(r.archivo) + '" data-nom="' + esc(r.colaborador) + '">' +
+                (r.miniatura ? '<img loading="lazy" src="' + RAIZ + esc(r.miniatura) + '" alt="">' : '<span class="en-sin"><i class="fas fa-image"></i></span>') + '</button>' +
                 '<div class="tx"><b>' + esc(r.colaborador) + '</b>' + esc(r.created_at.slice(11, 16)) + (r.observacion ? ' · ' + esc(r.observacion) : '') + '</div>' +
-                '<div class="bt"><button type="button" class="en-btn en-btn-ghost en-btn-sm" data-mover="' + r.id + '" title="Cambiar fecha"><i class="fas fa-calendar-alt"></i></button>' +
-                '<button type="button" class="en-btn en-btn-danger en-btn-sm" data-borrar="' + r.id + '" title="Eliminar"><i class="fas fa-trash"></i></button></div></div>').join('');
-        } catch (e) { $('#celRegs').innerHTML = '<p class="en-sub">No se pudieron cargar los registros.</p>'; }
+                '<div class="bt"><button type="button" class="wp-btn wp-btn-ghost wp-btn-sm" data-mover="' + r.id + '" title="Cambiar fecha"><i class="fas fa-calendar-alt"></i></button>' +
+                '<button type="button" class="wp-btn wp-btn-danger wp-btn-sm" data-borrar="' + r.id + '" title="Eliminar"><i class="fas fa-trash"></i></button></div></div>').join('');
+        } catch (e) { $('#celRegs').innerHTML = '<p class="wp-sub">No se pudieron cargar los registros.</p>'; }
     }
 
     $('#modalCelda').addEventListener('click', async e => {
@@ -354,10 +353,8 @@ require_once '../../core/header.php';
         const ver = e.target.closest('[data-ver]');
         if (ver) {
             $('#verTitulo').textContent = ver.dataset.nom;
-            $('#verVisor').innerHTML = ver.dataset.tipo === 'video'
-                ? '<video src="' + RAIZ + ver.dataset.ver + '" controls autoplay playsinline preload="metadata"></video>'
-                : '<img src="' + RAIZ + ver.dataset.ver + '" alt="">';
-            $('#modalVer').hidden = false;
+            $('#verVisor').innerHTML = '<img src="' + RAIZ + ver.dataset.ver + '" alt="">';
+            WP.modal.abrir('modalVer');
             return;
         }
         const mover = e.target.closest('[data-mover]');
@@ -371,7 +368,7 @@ require_once '../../core/header.php';
         }
         const borrar = e.target.closest('[data-borrar]');
         if (borrar) {
-            const r = await Swal.fire({ title: '¿Eliminar este registro?', text: 'Se borra también la foto o el video. No se puede deshacer.', icon: 'warning',
+            const r = await Swal.fire({ title: '¿Eliminar este registro?', text: 'Se borra también la foto. No se puede deshacer.', icon: 'warning',
                 showCancelButton: true, confirmButtonText: 'Eliminar', cancelButtonText: 'Cancelar', confirmButtonColor: '#dc2626' });
             if (!r.isConfirmed) return;
             try { const j = await post({ action: 'eliminar', id: borrar.dataset.borrar }); toast('success', j.message); cerrar($('#modalCelda')); await refrescar(); }
@@ -382,15 +379,15 @@ require_once '../../core/header.php';
     // ---------- Líderes ----------
     async function cargarLideres() {
         const ul = $('#listaLideres');
-        ul.innerHTML = '<li class="en-sub">Cargando...</li>';
+        ul.innerHTML = '<li class="wp-sub">Cargando...</li>';
         const j = await (await fetch(API + '?action=lideres', { credentials: 'same-origin' })).json();
         ul.innerHTML = j.data && j.data.length ? j.data.map(l =>
             '<li><span class="av">' + esc(l.nombre.charAt(0).toUpperCase()) + '</span><span class="tx"><b>' + esc(l.nombre) + '</b><span>' + esc(l.cedula) + ' · ' + esc(l.cargo) + '</span></span>' +
-            '<button type="button" class="en-btn en-btn-danger en-btn-sm" data-quitar="' + l.id + '" data-nom="' + esc(l.nombre) + '"><i class="fas fa-user-minus"></i> Retirar</button></li>').join('')
-            : '<li class="en-sub">Todavía no hay líderes. Busca un usuario arriba y agrégalo.</li>';
+            '<button type="button" class="wp-btn wp-btn-danger wp-btn-sm" data-quitar="' + l.id + '" data-nom="' + esc(l.nombre) + '"><i class="fas fa-user-minus"></i> Retirar</button></li>').join('')
+            : '<li class="wp-sub">Todavía no hay líderes. Busca un usuario arriba y agrégalo.</li>';
     }
     let cambiosLideres = false;
-    $('#btnLideres').addEventListener('click', () => { $('#modalLideres').hidden = false; cambiosLideres = false; cargarLideres(); });
+    $('#btnLideres').addEventListener('click', () => { WP.modal.abrir('modalLideres'); cambiosLideres = false; cargarLideres(); });
     $('#btnAgregar').addEventListener('click', async () => {
         const sel = $('#nuevoLider');
         if (!sel.value) return toast('info', 'Busca y selecciona un usuario.');
@@ -406,20 +403,10 @@ require_once '../../core/header.php';
         catch (err) { toast('error', err.message); }
     });
 
-    // ---------- Modales ----------
-    function cerrar(modal) {
-        modal.hidden = true;
-        if (modal.id === 'modalVer') $('#verVisor').innerHTML = '';
-        if (modal.id === 'modalLideres' && cambiosLideres) refrescar();
-    }
-    document.querySelectorAll('.en-modal').forEach(m => {
-        m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-cerrar]')) cerrar(m); });
-    });
-    document.addEventListener('keydown', e => {
-        if (e.key !== 'Escape') return;
-        const abierto = [...document.querySelectorAll('.en-modal:not([hidden])')].pop();
-        if (abierto && !document.querySelector('.swal2-container')) cerrar(abierto);
-    });
+    // ---------- Modales (abrir/cerrar, Esc y clic afuera: WP.modal de warepro-ui.js) ----------
+    const cerrar = m => WP.modal.cerrar(m);
+    $('#modalVer').addEventListener('wp-cerrar', () => { $('#verVisor').innerHTML = ''; });
+    $('#modalLideres').addEventListener('wp-cerrar', () => { if (cambiosLideres) refrescar(); });
 })();
 </script>
 </body>

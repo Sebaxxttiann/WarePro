@@ -107,7 +107,7 @@ $tarjetas = [
         <a href="<?= BASE_URL ?>/modules/reportes/dashboard.php" class="inline-block bg-dark text-brand-400 font-bold px-5 py-2 rounded-lg">Volver al inicio</a>
     </div>
 <?php else: ?>
-    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm mb-6 border-l-[5px] border-brand-400 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="wp-hero flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 flex items-center gap-3"><i class="fas fa-sliders-h text-brand-400"></i> Compensación variable</h1>
             <p class="text-gray-500 text-sm">Define cuánto gana cada cargo en esta operación. El valor diario es lo que suma cada día cumplido.</p>

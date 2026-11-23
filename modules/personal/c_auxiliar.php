@@ -233,7 +233,7 @@ require_once '../../core/header.php';
 </head>
 <body>
 <div class="dashboard-container cv">
-    <div class="welcome-section">
+    <div class="welcome-section wp-hero">
         <div>
             <h2>Compensación Variable</h2>
             <p><?= $es_propia ? 'Tu resumen' : 'Resumen de <strong>' . htmlspecialchars($persona['nombre']) . '</strong>' ?> · <strong><?= $mes_texto ?></strong></p>

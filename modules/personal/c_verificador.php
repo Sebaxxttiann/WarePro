@@ -183,7 +183,7 @@ $porcentaje_salud = ($maximo_posible_hoy > 0) ? ($dinero_acumulado / $maximo_pos
 <body>
 
 <div class="dashboard-container">
-    <div class="welcome-section">
+    <div class="welcome-section wp-hero">
         <div>
             <h2>Compensación Verificadores</h2>
             <p>Resumen al día de hoy en <strong><?php echo $mes_texto; ?></strong></p>

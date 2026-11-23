@@ -46,7 +46,7 @@ $tableros = $stmt->fetchAll();
 <body class="bg-gray-50">
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="mb-10 flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-6">
+    <div class="wp-hero flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Gestión de Tableros Digitales</h1>
             <p class="mt-2 text-sm text-gray-600">Crea, administra y supervisa los puntos de control de inventario.</p>

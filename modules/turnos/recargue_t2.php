@@ -118,7 +118,7 @@ g.apexcharts-datalabel text {
     <div class="max-w-[1600px] mx-auto p-4 md:p-8">
         
         
-        <div class="bg-white p-6 md:p-8 rounded-xl shadow-sm mb-6 border-l-[5px] border-brand-400 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="wp-hero flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-1 flex items-center gap-3">
                     <i class="fas fa-truck-loading text-brand-400 text-4xl"></i>
