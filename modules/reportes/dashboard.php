@@ -366,6 +366,7 @@ $cargoUsuario = $_SESSION['cargo'] ?? '';
         .verificador-card .card-icon { background: linear-gradient(135deg, #FFEB3B 0%, #FFC107 100%); color: #1a1a1a; }
         .auxiliar-card .card-icon { background: linear-gradient(135deg, #FFF176 0%, #FFD54F 100%); color: #1a1a1a; }
         .operadores-card .card-icon { background: linear-gradient(135deg, #FFCC02 0%, #FF8F00 100%); color: #1a1a1a; }
+        .entrenamientos-card .card-icon { background: linear-gradient(135deg, #1a1a1a 0%, #000 100%); color: #FFD700; }
 
         .access-denied {
             position: relative;
@@ -524,6 +525,15 @@ $cargoUsuario = $_SESSION['cargo'] ?? '';
                     <div class="stat-item"><span class="stat-number">2</span><span class="stat-label">Módulos</span></div>
                 </div>
             </div>
+
+            <div class="dashboard-card entrenamientos-card" onclick="navigateTo('../entrenamientos/index.php')">
+                <div class="card-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <h3 class="card-title">Entrenamientos</h3>
+                <p class="card-description">DPO: entrenamientos en el puesto con evidencia y calendario de cumplimiento por líder</p>
+                <div class="card-stats">
+                    <div class="stat-item"><span class="stat-number">DPO</span><span class="stat-label">Programa</span></div>
+                </div>
+            </div>
             
            
             
@@ -612,7 +622,8 @@ $cargoUsuario = $_SESSION['cargo'] ?? '';
             { title: "Módulo Supervisores", url: "../personal/supervisores.php", category: "Panel Principal", icon: "fa-user-tie", roles: ["admin", "lider", "supervisor"] },
             { title: "Módulo Verificador", url: "../personal/verificador.php", category: "Panel Principal", icon: "fa-clipboard-check", roles: ["admin", "lider", "verificador"] },
             { title: "Módulo Auxiliar", url: "../personal/auxiliar.php", category: "Panel Principal", icon: "fa-boxes", roles: ["admin", "lider", "auxiliar"] },
-            { title: "Módulo Operadores", url: "../personal/operadores.php", category: "Panel Principal", icon: "fa-hard-hat", roles: ["admin", "lider", "operador"] }
+            { title: "Módulo Operadores", url: "../personal/operadores.php", category: "Panel Principal", icon: "fa-hard-hat", roles: ["admin", "lider", "operador"] },
+            { title: "Entrenamientos DPO", url: "../entrenamientos/index.php", category: "Panel Principal", icon: "fa-chalkboard-teacher", roles: ["admin", "super_admin", "supervisor", "lider", "verificador", "auxiliar", "operador", "coplas"] }
         ];
 
         const searchInput = document.getElementById('globalSearch');
@@ -720,4 +731,4 @@ $cargoUsuario = $_SESSION['cargo'] ?? '';
         window.addEventListener('popstate', function(event) { hideLoading(); });
     </script>
 </body>
-</html>
+</html>
