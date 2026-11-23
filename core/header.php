@@ -96,6 +96,9 @@ if ($user_cargo === 'super_admin') {
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php $wpUiVer = @filemtime(__DIR__ . '/../public/css/warepro-ui.css') . @filemtime(__DIR__ . '/../public/js/warepro-ui.js'); ?>
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/public/css/warepro-ui.css?v=<?php echo $wpUiVer; ?>">
+    <script src="<?php echo BASE_URL; ?>/public/js/warepro-ui.js?v=<?php echo $wpUiVer; ?>" defer></script>
 </head>
 <body>
 

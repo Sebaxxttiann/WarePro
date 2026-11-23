@@ -122,7 +122,7 @@ try {
                 <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
             </a>
             
-            <div class="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+            <div class="wp-hero flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div class="absolute -top-24 -right-24 w-64 h-64 bg-ware-yellow/20 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div class="relative z-10">

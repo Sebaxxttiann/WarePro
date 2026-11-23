@@ -109,7 +109,7 @@ $operacion_nombre = $stmtOp->fetchColumn() ?: 'Operación';
 <div class="it-wrap max-w-[1500px] mx-auto px-4 py-6 md:px-8 md:py-8" id="app">
 
     <!-- Encabezado -->
-    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm mb-6 border-l-[5px] border-brand-400 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+    <div class="wp-hero flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div>
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-1 flex items-center gap-3">
                 <i class="fas fa-clipboard-check text-brand-400"></i> Indicadores por turno

@@ -248,7 +248,7 @@ $porcentaje_salud_variable = ($maximo_variable_hoy > 0) ? ($dinero_acumulado_var
 <body>
 
 <div class="dashboard-container">
-    <div class="welcome-section">
+    <div class="welcome-section wp-hero">
         <h2>Compensación OPM (Montacargas)</h2>
         <p>Resumen al día de hoy en <strong><?php echo $mes_texto; ?></strong></p>
     </div>

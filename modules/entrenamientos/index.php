@@ -18,27 +18,29 @@ require_once '../../core/header.php';
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/entrenamientos.css">
 <style>
-    .en-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
-    .en-mod { background: #fff; border-radius: 18px; padding: 22px; box-shadow: 0 6px 22px rgba(0,0,0,.06); border-top: 4px solid #FFD700; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; transition: transform .2s, box-shadow .2s; }
-    a.en-mod:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(0,0,0,.12); }
-    .en-mod .ico { width: 52px; height: 52px; border-radius: 14px; background: #111; color: #FFD700; display: grid; place-items: center; font-size: 1.35rem; }
-    .en-mod h3 { margin: 0; font-size: 1.1rem; }
-    .en-mod p { margin: 0; color: #666; font-size: .88rem; line-height: 1.5; flex: 1; }
-    .en-mod .pie { font-size: .8rem; font-weight: 600; color: #b38f00; display: flex; align-items: center; gap: 6px; }
-    .en-mod.bloq { opacity: .6; border-top-color: #ddd; }
+    .en-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .en-mod { background: #fff; border-radius: var(--wp-radio-lg); padding: 1.75rem; box-shadow: var(--wp-sombra); border: 1px solid var(--wp-borde); border-top: 4px solid var(--wp-oro);
+        text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .75rem; transition: transform .3s, box-shadow .3s; }
+    a.en-mod:hover { transform: translateY(-4px); box-shadow: var(--wp-sombra-lg); }
+    .en-mod .ico { width: 56px; height: 56px; border-radius: 14px; background: var(--wp-grad-negro); color: var(--wp-oro); display: grid; place-items: center; font-size: 1.4rem; }
+    .en-mod h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+    .en-mod p { margin: 0; color: var(--wp-gris); font-size: .9rem; line-height: 1.55; flex: 1; }
+    .en-mod .pie { font-size: .85rem; font-weight: 600; color: #b38f00; display: flex; align-items: center; gap: .4rem; }
+    .en-mod.bloq { opacity: .65; border-top-color: var(--wp-borde); }
     .en-mod.bloq .ico { background: #e5e7eb; color: #9ca3af; }
-    .en-seccion { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; margin: 26px 0 12px; }
+    .en-seccion { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--wp-gris); margin: 0 0 1rem; display: flex; align-items: center; gap: .5rem; }
+    .en-seccion::before { content: ''; width: 18px; height: 3px; background: var(--wp-oro); border-radius: 3px; }
 </style>
 
-<div class="en-wrap">
-    <section class="en-hero">
-        <div class="en-hero-top">
+<div class="wp-page">
+    <section class="wp-hero">
+        <div class="wp-hero-top">
             <div>
                 <h1><i class="fas fa-chalkboard-teacher"></i> Entrenamientos</h1>
                 <p>Registro y seguimiento de los entrenamientos de la operación. Empezamos con DPO; aquí irán los demás programas de formación.</p>
             </div>
             <?php if ($esLider): ?>
-                <span class="en-chip"><i class="fas fa-check-circle"></i> Hoy llevas <?= $hoyRegistros ?> registro<?= $hoyRegistros === 1 ? '' : 's' ?></span>
+                <span class="wp-chip"><i class="fas fa-check-circle"></i> Hoy llevas <?= $hoyRegistros ?> registro<?= $hoyRegistros === 1 ? '' : 's' ?></span>
             <?php endif; ?>
         </div>
     </section>
@@ -49,7 +51,7 @@ require_once '../../core/header.php';
             <a class="en-mod" href="dpo_registro.php">
                 <div class="ico"><i class="fas fa-camera"></i></div>
                 <h3>Registrar entrenamiento</h3>
-                <p>Busca a la persona que entrenaste y sube la foto o el video como evidencia.</p>
+                <p>Busca a la persona que entrenaste y sube la foto como evidencia.</p>
                 <span class="pie"><i class="fas fa-arrow-right"></i> Registrar ahora</span>
             </a>
         <?php else: ?>
@@ -63,7 +65,7 @@ require_once '../../core/header.php';
         <a class="en-mod" href="dpo_evidencias.php">
             <div class="ico"><i class="fas fa-images"></i></div>
             <h3><?= $esAdmin ? 'Evidencias' : 'Mis evidencias' ?></h3>
-            <p><?= $esAdmin ? 'Todas las fotos y videos de la operación, con filtros por líder, persona y fecha.' : 'Las fotos y videos que has registrado.' ?></p>
+            <p><?= $esAdmin ? 'Todas las fotos de la operación, con filtros por líder, persona y fecha.' : 'Las fotos que has registrado.' ?></p>
             <span class="pie"><i class="fas fa-arrow-right"></i> Ver evidencias</span>
         </a>
 

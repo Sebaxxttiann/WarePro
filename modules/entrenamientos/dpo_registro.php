@@ -10,136 +10,123 @@ require_once '../../core/header.php';
 ?>
 <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/entrenamientos.css">
 <style>
-    .rg-lider { display: flex; align-items: center; gap: 12px; }
-    .rg-avatar { width: 42px; height: 42px; border-radius: 50%; background: #FFD700; color: #000; display: grid; place-items: center; font-weight: 700; flex-shrink: 0; }
-    .rg-opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .rg-op { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 10px; border: 2px dashed #e0e0e0; border-radius: 14px; background: #fafafa; cursor: pointer; font: inherit; font-weight: 600; font-size: .85rem; color: #333; text-align: center; transition: border-color .2s, background .2s; }
-    .rg-op:hover { border-color: #FFD700; background: #fffbea; }
-    .rg-op i { font-size: 1.5rem; color: #111; }
-    .rg-op small { font-weight: 500; color: #888; font-size: .72rem; }
-    .rg-op .rg-reco { position: absolute; top: -9px; right: 8px; background: #111; color: #FFD700; font-size: .62rem; padding: 2px 8px; border-radius: 999px; }
-    .rg-op input { display: none; }
-    .rg-prev { display: none; margin-top: 14px; gap: 14px; align-items: center; background: #f8f8f8; border-radius: 14px; padding: 10px; }
+    .rg-lider { display: flex; align-items: center; gap: .75rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid var(--wp-borde); border-radius: var(--wp-radio); padding: 1rem; }
+    .rg-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--wp-grad-oro); color: var(--wp-negro); display: grid; place-items: center; font-weight: 700; flex-shrink: 0; }
+    .rg-lider b { display: block; font-size: .95rem; }
+    .rg-lider .wp-badge { margin-left: auto; }
+    .rg-paso { display: flex; align-items: center; gap: .6rem; font-size: 1.1rem; font-weight: 700; margin: 0 0 .35rem; }
+    .rg-bloque + .rg-bloque { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--wp-borde); }
+    .rg-opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .rg-prev { display: none; margin-top: 1rem; gap: 1rem; align-items: center; background: var(--wp-gris-claro); border: 2px solid var(--wp-borde); border-radius: var(--wp-radio); padding: .75rem; }
     .rg-prev.on { display: flex; }
-    .rg-prev .en-thumb { width: 120px; flex-shrink: 0; }
-    .rg-ahorro { font-size: .8rem; color: #15803d; font-weight: 600; }
-    .rg-fechas { display: flex; gap: 8px; }
-    .rg-fechas label { flex: 1; }
-    .rg-fechas input { display: none; }
-    .rg-fechas span { display: block; text-align: center; padding: 10px; border: 2px solid #e5e7eb; border-radius: 11px; font-weight: 600; font-size: .85rem; cursor: pointer; }
-    .rg-fechas input:checked + span { border-color: #111; background: #111; color: #FFD700; }
-    .rg-barra { height: 8px; background: #eee; border-radius: 99px; overflow: hidden; margin-top: 12px; display: none; }
+    .rg-prev .en-thumb { width: 130px; flex-shrink: 0; }
+    .rg-ahorro { font-size: .82rem; color: #15803d; font-weight: 600; margin-top: .2rem; }
+    .rg-fechas { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .rg-fechas label { position: relative; }
+    .rg-fechas input { position: absolute; opacity: 0; pointer-events: none; }
+    .rg-fechas span { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .9rem; border: 2px solid var(--wp-borde); border-radius: var(--wp-radio); background: var(--wp-gris-claro); font-weight: 600; cursor: pointer; transition: all .2s; }
+    .rg-fechas input:checked + span { border-color: var(--wp-oro); background: rgba(255, 215, 0, .12); box-shadow: 0 0 0 4px rgba(255, 215, 0, .1); }
+    .rg-fechas input:focus-visible + span { outline: 2px solid var(--wp-oro); }
+    .rg-barra { height: 8px; background: #eee; border-radius: 99px; overflow: hidden; margin-top: 1rem; display: none; }
     .rg-barra.on { display: block; }
-    .rg-barra div { height: 100%; width: 0; background: linear-gradient(90deg, #FFD700, #FFA500); transition: width .2s; }
-    .rg-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
-    .rg-lista .nom { font-size: .76rem; font-weight: 600; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rg-lista .fec { font-size: .68rem; color: #888; }
-    .rg-cam video { width: 100%; max-height: 60vh; background: #000; border-radius: 12px; display: block; }
-    .rg-cam-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
-    .rg-rec { display: none; align-items: center; gap: 8px; font-weight: 700; color: #dc2626; }
-    .rg-rec.on { display: inline-flex; }
-    .rg-rec i { animation: rgParpadeo 1s infinite; }
-    @keyframes rgParpadeo { 50% { opacity: .2; } }
-    @media (max-width: 480px) { .rg-opciones { grid-template-columns: 1fr; } .rg-op { flex-direction: row; justify-content: flex-start; padding: 14px; } }
+    .rg-barra div { height: 100%; width: 0; background: var(--wp-grad-oro); transition: width .2s; }
+    .rg-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+    .rg-lista .nom { font-size: .8rem; font-weight: 600; margin-top: .4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rg-lista .fec { font-size: .72rem; color: var(--wp-gris); }
+    @media (max-width: 560px) { .rg-opciones { grid-template-columns: 1fr; } .rg-lider .wp-badge { display: none; } }
 </style>
 
-<div class="en-wrap estrecho">
-    <section class="en-hero">
-        <div class="en-hero-top">
+<div class="wp-page estrecho">
+    <section class="wp-hero">
+        <div class="wp-hero-top">
             <div>
                 <h1><i class="fas fa-camera"></i> Registrar DPO</h1>
-                <p>Entrenamiento en el puesto: elige a quién entrenaste y sube la evidencia.</p>
+                <p>Entrenamiento en el puesto: elige a quién entrenaste y sube la foto como evidencia.</p>
             </div>
-            <a class="en-chip" href="index.php"><i class="fas fa-arrow-left"></i> Entrenamientos</a>
+            <a class="wp-btn wp-btn-ghost wp-btn-sm" href="index.php"><i class="fas fa-arrow-left"></i> Entrenamientos</a>
         </div>
     </section>
 
 <?php if (!$esLider): ?>
-    <div class="en-card en-empty">
+    <div class="wp-card"><div class="wp-card-body wp-empty">
         <i class="fas fa-lock"></i>
         <b>No estás habilitado como líder DPO</b>
         <p>Pídele a tu supervisor que te agregue en el calendario de DPO.</p>
-        <?php if (dpoEsAdmin()): ?><a class="en-btn en-btn-dark" href="dpo_calendario.php"><i class="fas fa-calendar-check"></i> Ir al calendario</a><?php endif; ?>
-    </div>
+        <?php if (dpoEsAdmin()): ?><a class="wp-btn wp-btn-primary" href="dpo_calendario.php"><i class="fas fa-calendar-check"></i> Ir al calendario</a><?php endif; ?>
+    </div></div>
 <?php else: ?>
-    <div class="en-card">
-        <div class="rg-lider">
-            <div class="rg-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($_SESSION['nombre'], 0, 1, 'UTF-8'), 'UTF-8')) ?></div>
-            <div>
-                <div style="font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase">Líder</div>
-                <div style="font-weight:700"><?= htmlspecialchars($_SESSION['nombre']) ?></div>
-            </div>
-        </div>
-    </div>
-
-    <form id="frm" class="en-card" novalidate>
-        <h2><span class="en-num">1</span> ¿A quién entrenaste?</h2>
-        <p class="en-sub">Busca por nombre o cédula entre los usuarios de la operación.</p>
-        <select id="colaborador" name="colaborador_id" data-person-select data-value-field="id" data-placeholder="Buscar persona..."></select>
-
-        <h2 style="margin-top:26px"><span class="en-num">2</span> Evidencia</h2>
-        <p class="en-sub">Las fotos se comprimen en tu celular antes de subirse; los videos grabados aquí quedan livianos.</p>
-        <div class="rg-opciones">
-            <label class="rg-op">
-                <i class="fas fa-camera"></i> Tomar foto
-                <input type="file" accept="image/*" capture="environment" data-origen>
-            </label>
-            <button type="button" class="rg-op" id="btnGrabar">
-                <span class="rg-reco">Recomendado</span>
-                <i class="fas fa-video"></i> Grabar video
-                <small>Máx. <?= 90 ?> s · liviano</small>
-            </button>
-            <label class="rg-op">
-                <i class="fas fa-images"></i> Galería
-                <small>Foto o video</small>
-                <input type="file" accept="image/*,video/*" data-origen>
-            </label>
-        </div>
-        <div class="rg-prev" id="prev">
-            <div class="en-thumb" id="prevThumb"></div>
-            <div style="min-width:0;flex:1">
-                <div id="prevTipo" style="font-weight:700"></div>
-                <div class="rg-ahorro" id="prevPeso"></div>
-                <button type="button" class="en-btn en-btn-ghost en-btn-sm" id="btnQuitar" style="margin-top:8px"><i class="fas fa-times"></i> Cambiar</button>
-            </div>
-        </div>
-
-        <h2 style="margin-top:26px"><span class="en-num">3</span> Detalles</h2>
-        <label class="en-label">Fecha del entrenamiento</label>
-        <div class="rg-fechas">
-            <label><input type="radio" name="fecha" value="<?= date('Y-m-d') ?>" checked><span>Hoy · <?= date('d/m') ?></span></label>
-            <label><input type="radio" name="fecha" value="<?= date('Y-m-d', strtotime('-1 day')) ?>"><span>Ayer · <?= date('d/m', strtotime('-1 day')) ?></span></label>
-        </div>
-        <label class="en-label" for="obs" style="margin-top:14px">Observación (opcional)</label>
-        <input type="text" id="obs" name="observacion" class="en-input" maxlength="255" placeholder="Ej: Uso correcto de estibadora">
-
-        <button type="submit" class="en-btn en-btn-dark en-btn-block" id="btnGuardar" style="margin-top:20px"><i class="fas fa-cloud-upload-alt"></i> Guardar entrenamiento</button>
-        <div class="rg-barra" id="barra"><div></div></div>
-        <p id="estado" style="text-align:center;font-size:.85rem;margin:8px 0 0;color:#666"></p>
-    </form>
-
-    <div class="en-card">
-        <h2><i class="fas fa-history" style="color:#d4a900"></i> Tus registros de los últimos 7 días</h2>
-        <div class="rg-lista" id="lista" style="margin-top:12px"><p class="en-sub">Cargando...</p></div>
-    </div>
-
-    <div class="en-modal" id="modalCam" hidden>
-        <div class="en-modal-box">
-            <div class="en-modal-head"><h3><i class="fas fa-video"></i> Grabar video</h3><button type="button" class="en-modal-close" data-cerrar>&times;</button></div>
-            <div class="en-modal-body rg-cam">
-                <video id="camVideo" playsinline muted></video>
-                <div class="rg-cam-bar">
-                    <span class="rg-rec" id="recEstado"><i class="fas fa-circle"></i> <span id="recTiempo">0:00</span></span>
-                    <span style="color:#888;font-size:.8rem" id="recAyuda">Encuadra y presiona grabar.</span>
-                    <button type="button" class="en-btn en-btn-gold" id="btnRec"><i class="fas fa-circle"></i> Grabar</button>
+    <form id="frm" class="wp-card" novalidate>
+        <div class="wp-card-head"><h2><i class="fas fa-clipboard-check"></i> Nuevo entrenamiento</h2></div>
+        <div class="wp-card-body">
+            <div class="rg-bloque">
+                <label class="wp-label"><i class="fas fa-user-tie"></i> Líder</label>
+                <div class="rg-lider">
+                    <div class="rg-avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($_SESSION['nombre'], 0, 1, 'UTF-8'), 'UTF-8')) ?></div>
+                    <b><?= htmlspecialchars($_SESSION['nombre']) ?></b>
+                    <span class="wp-badge wp-badge-success"><i class="fas fa-lock"></i> Sesión activa</span>
                 </div>
             </div>
+
+            <div class="rg-bloque">
+                <div class="rg-paso"><span class="en-num">1</span> ¿A quién entrenaste? *</div>
+                <p class="wp-sub">Busca por nombre o cédula entre los usuarios de la operación.</p>
+                <select id="colaborador" name="colaborador_id" class="wp-select" data-person-select data-value-field="id" data-placeholder="Buscar persona..."></select>
+            </div>
+
+            <div class="rg-bloque">
+                <div class="rg-paso"><span class="en-num">2</span> Foto de evidencia *</div>
+                <p class="wp-sub">La foto se comprime en tu celular antes de subirse, así ocupa poco espacio.</p>
+                <div class="rg-opciones">
+                    <label class="wp-upload">
+                        <input type="file" accept="image/*" capture="environment" data-origen>
+                        <i class="fas fa-camera"></i>
+                        <div><b>Tomar foto</b><small>Abre la cámara</small></div>
+                    </label>
+                    <label class="wp-upload">
+                        <input type="file" accept="image/jpeg,image/png,image/webp" data-origen>
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <div><b>Adjuntar imagen</b><small>Desde la galería o el equipo</small></div>
+                    </label>
+                </div>
+                <div class="rg-prev" id="prev">
+                    <div class="en-thumb" id="prevThumb"></div>
+                    <div style="min-width:0;flex:1">
+                        <b>Foto lista</b>
+                        <div class="rg-ahorro" id="prevPeso"></div>
+                        <button type="button" class="wp-btn wp-btn-ghost wp-btn-sm" id="btnQuitar" style="margin-top:.6rem"><i class="fas fa-sync-alt"></i> Cambiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rg-bloque">
+                <div class="rg-paso"><span class="en-num">3</span> Detalles</div>
+                <label class="wp-label" style="margin-top:1rem"><i class="fas fa-calendar-alt"></i> Fecha del entrenamiento</label>
+                <div class="rg-fechas">
+                    <label><input type="radio" name="fecha" value="<?= date('Y-m-d') ?>" checked><span><i class="fas fa-sun"></i> Hoy · <?= date('d/m') ?></span></label>
+                    <label><input type="radio" name="fecha" value="<?= date('Y-m-d', strtotime('-1 day')) ?>"><span><i class="fas fa-history"></i> Ayer · <?= date('d/m', strtotime('-1 day')) ?></span></label>
+                </div>
+                <label class="wp-label" for="obs" style="margin-top:1.5rem"><i class="fas fa-sticky-note"></i> Observación</label>
+                <textarea id="obs" name="observacion" class="wp-textarea" maxlength="255" rows="2" placeholder="Opcional. Ej: uso correcto de la estibadora"></textarea>
+            </div>
+
+            <div class="wp-modal-foot">
+                <a href="index.php" class="wp-btn wp-btn-secondary"><i class="fas fa-times"></i> Cancelar</a>
+                <button type="submit" class="wp-btn wp-btn-primary" id="btnGuardar"><i class="fas fa-save"></i> Guardar entrenamiento</button>
+            </div>
+            <div class="rg-barra" id="barra"><div></div></div>
         </div>
+    </form>
+
+    <div class="wp-card">
+        <div class="wp-card-head"><h2><i class="fas fa-history"></i> Tus registros de los últimos 7 días</h2></div>
+        <div class="wp-card-body"><div class="rg-lista" id="lista"><p class="wp-sub">Cargando...</p></div></div>
     </div>
 
-    <div class="en-modal" id="modalVer" hidden>
-        <div class="en-modal-box"><div class="en-modal-head"><h3 id="verTitulo"></h3><button type="button" class="en-modal-close" data-cerrar>&times;</button></div>
-            <div class="en-modal-body"><div class="en-visor" id="verVisor"></div></div></div>
+    <div class="wp-modal" id="modalVer" hidden>
+        <div class="wp-modal-box">
+            <div class="wp-modal-head"><h2><i class="fas fa-image"></i> <span id="verTitulo"></span></h2><button type="button" class="wp-modal-close" data-wp-cerrar>&times;</button></div>
+            <div class="en-visor" id="verVisor"></div>
+        </div>
     </div>
 <?php endif; ?>
 </div>
@@ -155,135 +142,87 @@ require_once '../../core/header.php';
     const RAIZ = WAREPRO_BASE_URL + '/';
     const $ = s => document.querySelector(s);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    let evidencia = null; // {tipo, archivo, miniatura, original, duracion}
+    const aviso = (icon, title, text) => Swal.fire({ icon, title, text, confirmButtonText: 'Entendido' });
+    let evidencia = null; // {archivo, miniatura, original}
 
-    function estado(t, color) { $('#estado').textContent = t || ''; $('#estado').style.color = color || '#666'; }
-
-    // ---------- Evidencia desde archivo ----------
+    // ---------- Foto ----------
     document.querySelectorAll('[data-origen]').forEach(inp => inp.addEventListener('change', async function () {
         const f = this.files[0]; this.value = '';
         if (!f) return;
-        await procesar(f);
-    }));
-
-    async function procesar(blob) {
-        estado('Preparando evidencia...');
         try {
-            evidencia = blob.type.startsWith('video/') ? await DpoMedia.prepararVideo(blob) : await DpoMedia.comprimirImagen(blob);
+            evidencia = await DpoMedia.comprimirImagen(f);
             mostrarPrevia();
-            estado('');
         } catch (e) {
             evidencia = null; $('#prev').classList.remove('on');
-            estado(e.message, '#dc2626');
+            aviso('error', 'No se pudo usar la foto', e.message);
         }
-    }
+    }));
 
     function mostrarPrevia() {
-        const ev = evidencia;
-        const url = ev.miniatura ? URL.createObjectURL(ev.miniatura) : null;
-        $('#prevThumb').innerHTML = (url ? '<img src="' + url + '" alt="">' : '<span class="en-sin"><i class="fas fa-film"></i></span>') +
-            (ev.tipo === 'video' ? '<span class="en-play"><i class="fas fa-play-circle"></i></span>' : '');
-        $('#prevTipo').textContent = ev.tipo === 'video' ? 'Video' + (ev.duracion ? ' · ' + ev.duracion + ' s' : '') : 'Foto';
-        const ahorro = ev.original > ev.archivo.size ? ' (antes ' + DpoMedia.mb(ev.original) + ')' : '';
-        $('#prevPeso').textContent = 'Se subirán ' + DpoMedia.mb(ev.archivo.size) + ahorro;
+        $('#prevThumb').innerHTML = '<img src="' + URL.createObjectURL(evidencia.miniatura) + '" alt="">';
+        const ahorro = evidencia.original > evidencia.archivo.size ? ' (antes ' + DpoMedia.mb(evidencia.original) + ')' : '';
+        $('#prevPeso').textContent = 'Se subirán ' + DpoMedia.mb(evidencia.archivo.size) + ahorro;
         $('#prev').classList.add('on');
     }
     $('#btnQuitar').addEventListener('click', () => { evidencia = null; $('#prev').classList.remove('on'); });
-
-    // ---------- Grabación en la app ----------
-    const modalCam = $('#modalCam');
-    let grab = null, grabando = false;
-    $('#btnGrabar').addEventListener('click', async () => {
-        if (!DpoMedia.Grabador.soportado()) { estado('Tu navegador no permite grabar aquí. Usa "Galería".', '#dc2626'); return; }
-        grab = new DpoMedia.Grabador($('#camVideo'), (seg, max) => {
-            $('#recTiempo').textContent = Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
-            $('#recAyuda').textContent = 'Quedan ' + (max - seg) + ' s';
-        });
-        modalCam.hidden = false;
-        try { await grab.abrir(); }
-        catch (e) { cerrarCam(); estado('No se pudo abrir la cámara. Revisa los permisos del navegador.', '#dc2626'); }
-    });
-    $('#btnRec').addEventListener('click', async () => {
-        if (!grabando) {
-            grab.iniciar(); grabando = true;
-            $('#btnRec').innerHTML = '<i class="fas fa-stop"></i> Detener';
-            $('#recEstado').classList.add('on');
-            return;
-        }
-        const blob = await grab.detener();
-        cerrarCam();
-        if (blob && blob.size) await procesar(blob);
-    });
-    function cerrarCam() {
-        if (grab) grab.cerrar();
-        grabando = false; modalCam.hidden = true;
-        $('#btnRec').innerHTML = '<i class="fas fa-circle"></i> Grabar';
-        $('#recEstado').classList.remove('on'); $('#recTiempo').textContent = '0:00'; $('#recAyuda').textContent = 'Encuadra y presiona grabar.';
-    }
 
     // ---------- Guardar ----------
     $('#frm').addEventListener('submit', function (e) {
         e.preventDefault();
         const colab = $('#colaborador').value;
-        if (!colab) return estado('Selecciona a la persona que entrenaste.', '#dc2626');
-        if (!evidencia) return estado('Agrega la foto o el video del entrenamiento.', '#dc2626');
+        if (!colab) return aviso('warning', 'Falta la persona', 'Selecciona a la persona que entrenaste.');
+        if (!evidencia) return aviso('warning', 'Falta la foto', 'Toma o adjunta la foto del entrenamiento.');
 
-        const ext = evidencia.archivo.type.includes('mp4') ? 'mp4' : evidencia.archivo.type.includes('webm') ? 'webm' : evidencia.archivo.type.includes('quicktime') ? 'mov' : 'jpg';
         const fd = new FormData();
         fd.append('action', 'subir');
         fd.append('colaborador_id', colab);
         fd.append('fecha', document.querySelector('input[name="fecha"]:checked').value);
         fd.append('observacion', $('#obs').value);
-        fd.append('archivo', evidencia.archivo, 'evidencia.' + ext);
-        if (evidencia.miniatura) fd.append('miniatura', evidencia.miniatura, 'miniatura.jpg');
-        if (evidencia.duracion) fd.append('duracion', evidencia.duracion);
+        fd.append('archivo', evidencia.archivo, 'evidencia.jpg');
+        fd.append('miniatura', evidencia.miniatura, 'miniatura.jpg');
 
-        const btn = $('#btnGuardar'); btn.disabled = true;
-        const barra = $('#barra'); barra.classList.add('on');
+        const btn = $('#btnGuardar'), barra = $('#barra'), txt = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+        barra.classList.add('on');
+        const fin = () => { btn.disabled = false; btn.innerHTML = txt; barra.classList.remove('on'); barra.firstElementChild.style.width = 0; };
+
         const xhr = new XMLHttpRequest();
         xhr.open('POST', API);
         const csrf = document.querySelector('meta[name="csrf-token"]');
         if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf.content);
-        xhr.upload.onprogress = ev => { if (ev.lengthComputable) { const p = Math.round(ev.loaded * 100 / ev.total); barra.firstElementChild.style.width = p + '%'; estado('Subiendo ' + p + '%'); } };
+        xhr.upload.onprogress = ev => { if (ev.lengthComputable) barra.firstElementChild.style.width = Math.round(ev.loaded * 100 / ev.total) + '%'; };
         xhr.onload = () => {
-            let j = {}; try { j = JSON.parse(xhr.responseText); } catch (err) { j = { message: xhr.status === 413 ? 'El archivo es demasiado pesado.' : 'Respuesta inválida del servidor.' }; }
-            btn.disabled = false; barra.classList.remove('on'); barra.firstElementChild.style.width = 0;
+            let j = {}; try { j = JSON.parse(xhr.responseText); } catch (err) { j = { message: xhr.status === 413 ? 'La foto es demasiado pesada.' : 'Respuesta inválida del servidor.' }; }
+            fin();
             if (j.success) {
-                estado('');
                 Swal.fire({ icon: 'success', title: '¡Registrado!', text: j.message, timer: 1800, showConfirmButton: false });
                 evidencia = null; $('#prev').classList.remove('on'); $('#obs').value = '';
                 PersonSelect.setValue($('#colaborador'), '');
                 cargarLista();
-            } else estado(j.message || 'No se pudo guardar.', '#dc2626');
+            } else aviso('error', 'No se pudo guardar', j.message || 'Intenta de nuevo.');
         };
-        xhr.onerror = () => { btn.disabled = false; barra.classList.remove('on'); estado('Sin conexión. Intenta de nuevo.', '#dc2626'); };
+        xhr.onerror = () => { fin(); aviso('error', 'Sin conexión', 'Revisa tu conexión e intenta de nuevo.'); };
         xhr.send(fd);
     });
 
     // ---------- Mis registros ----------
     async function cargarLista() {
+        const l = $('#lista');
         try {
             const j = await (await fetch(API + '?action=mis_registros', { credentials: 'same-origin' })).json();
-            const l = $('#lista');
-            if (!j.success || !j.data.length) { l.innerHTML = '<p class="en-sub">Aún no tienes registros esta semana.</p>'; return; }
-            l.innerHTML = j.data.map(r => '<div><button type="button" class="en-thumb" data-ver="' + esc(r.archivo) + '" data-tipo="' + r.tipo + '" data-nom="' + esc(r.colaborador) + '">' +
-                (r.miniatura ? '<img loading="lazy" src="' + RAIZ + esc(r.miniatura) + '" alt="">' : '<span class="en-sin"><i class="fas fa-' + (r.tipo === 'video' ? 'film' : 'image') + '"></i></span>') +
-                (r.tipo === 'video' ? '<span class="en-play"><i class="fas fa-play-circle"></i></span>' : '') + '</button>' +
+            if (!j.success || !j.data.length) { l.innerHTML = '<div class="wp-empty" style="grid-column:1/-1"><i class="fas fa-camera"></i>Aún no tienes registros esta semana.</div>'; return; }
+            l.innerHTML = j.data.map(r => '<div><button type="button" class="en-thumb" data-ver="' + esc(r.archivo) + '" data-nom="' + esc(r.colaborador) + '">' +
+                (r.miniatura ? '<img loading="lazy" src="' + RAIZ + esc(r.miniatura) + '" alt="">' : '<span class="en-sin"><i class="fas fa-image"></i></span>') + '</button>' +
                 '<div class="nom">' + esc(r.colaborador) + '</div><div class="fec">' + r.fecha.split('-').reverse().slice(0, 2).join('/') + '</div></div>').join('');
-        } catch (e) { $('#lista').innerHTML = '<p class="en-sub">No se pudieron cargar tus registros.</p>'; }
+        } catch (e) { l.innerHTML = '<p class="wp-sub">No se pudieron cargar tus registros.</p>'; }
     }
     $('#lista').addEventListener('click', e => {
         const b = e.target.closest('[data-ver]'); if (!b) return;
         $('#verTitulo').textContent = b.dataset.nom;
-        $('#verVisor').innerHTML = b.dataset.tipo === 'video'
-            ? '<video src="' + RAIZ + b.dataset.ver + '" controls autoplay playsinline preload="metadata"></video>'
-            : '<img src="' + RAIZ + b.dataset.ver + '" alt="">';
-        $('#modalVer').hidden = false;
+        $('#verVisor').innerHTML = '<img src="' + RAIZ + b.dataset.ver + '" alt="">';
+        WP.modal.abrir('modalVer');
     });
-    document.querySelectorAll('[data-cerrar]').forEach(b => b.addEventListener('click', () => {
-        if (b.closest('#modalCam')) return cerrarCam();
-        $('#modalVer').hidden = true; $('#verVisor').innerHTML = '';
-    }));
+    $('#modalVer').addEventListener('wp-cerrar', () => { $('#verVisor').innerHTML = ''; });
 
     cargarLista();
 })();

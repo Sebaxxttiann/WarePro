@@ -79,11 +79,10 @@ try {
                 ? 'El archivo es demasiado pesado para el servidor.' : 'No se recibió la evidencia. Intenta de nuevo.');
         }
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($arch['tmp_name']);
-        if (!isset(DPO_MIME[$mime])) fallar('Formato no permitido. Sube una foto (JPG/PNG/WebP) o un video (MP4/WebM/MOV).');
+        if (!isset(DPO_MIME[$mime])) fallar('Solo se permiten fotos (JPG, PNG o WebP).');
         [$tipo, $ext] = DPO_MIME[$mime];
-        $max = $tipo === 'imagen' ? DPO_MAX_IMAGEN : DPO_MAX_VIDEO;
-        if ($arch['size'] > $max) fallar('La evidencia supera el máximo de ' . round($max / 1048576) . ' MB.');
-        if ($tipo === 'imagen' && !@getimagesize($arch['tmp_name'])) fallar('La imagen está dañada.');
+        if ($arch['size'] > DPO_MAX_IMAGEN) fallar('La foto supera el máximo de ' . round(DPO_MAX_IMAGEN / 1048576) . ' MB.');
+        if (!@getimagesize($arch['tmp_name'])) fallar('La imagen está dañada.');
 
         // Carpeta por operación y mes: uploads/dpo/{op}/{YYYY}/{MM}/
         $rel = 'uploads/dpo/' . $op . '/' . date('Y/m', strtotime($fecha));
@@ -102,12 +101,11 @@ try {
             if (!move_uploaded_file($mini['tmp_name'], dirname(__DIR__, 2) . '/' . $miniRel)) $miniRel = null;
         }
 
-        $duracion = isset($_POST['duracion']) && $tipo === 'video' ? min(65535, max(0, (int)$_POST['duracion'])) : null;
         $obs = trim(mb_substr((string)($_POST['observacion'] ?? ''), 0, 255, 'UTF-8'));
 
         $stmt = $pdo->prepare("INSERT INTO dpo_registros (operacion_id, lider_id, colaborador_id, fecha, tipo, archivo, miniatura, peso_bytes, duracion_seg, observacion)
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$op, $yo, $colaborador, $fecha, $tipo, $archivoRel, $miniRel, (int)$arch['size'], $duracion, $obs !== '' ? $obs : null]);
+        $stmt->execute([$op, $yo, $colaborador, $fecha, $tipo, $archivoRel, $miniRel, (int)$arch['size'], null, $obs !== '' ? $obs : null]);
         responder(['success' => true, 'message' => "Entrenamiento de $nombreColaborador registrado.", 'id' => (int)$pdo->lastInsertId()]);
 
     case 'mis_registros':
@@ -127,10 +125,10 @@ try {
         // Quien no es administrador solo ve lo que registró
         if (!dpoEsAdmin()) { $where[] = 'r.lider_id = ?'; $params[] = $yo; }
         elseif (!empty($_GET['lider'])) { $where[] = 'r.lider_id = ?'; $params[] = (int)$_GET['lider']; }
-        if (!empty($_GET['q'])) { $where[] = 'c.nombre LIKE ?'; $params[] = '%' . $_GET['q'] . '%'; }
+        if (!empty($_GET['colaborador'])) { $where[] = 'r.colaborador_id = ?'; $params[] = (int)$_GET['colaborador']; }
+        elseif (!empty($_GET['q'])) { $where[] = 'c.nombre LIKE ?'; $params[] = '%' . $_GET['q'] . '%'; }
         if (!empty($_GET['desde']) && fechaValida($_GET['desde'])) { $where[] = 'r.fecha >= ?'; $params[] = $_GET['desde']; }
         if (!empty($_GET['hasta']) && fechaValida($_GET['hasta'])) { $where[] = 'r.fecha <= ?'; $params[] = $_GET['hasta']; }
-        if (in_array($_GET['tipo'] ?? '', ['imagen', 'video'], true)) { $where[] = 'r.tipo = ?'; $params[] = $_GET['tipo']; }
         $w = implode(' AND ', $where);
 
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM dpo_registros r JOIN usuarios c ON c.id = r.colaborador_id WHERE $w");

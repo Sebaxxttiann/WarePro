@@ -96,7 +96,7 @@ require_once '../../core/header.php';
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
     
-    <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div class="wp-hero flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/20 text-goldDark text-xs font-bold mb-3 border border-gold/30 uppercase tracking-wider">
                 <i class="fas fa-boxes"></i> Logística

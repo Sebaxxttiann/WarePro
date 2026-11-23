@@ -139,7 +139,7 @@ try {
         <div class="max-w-[1600px] mx-auto space-y-6">
             
             
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <div class="wp-hero">
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 bg-brand-900 rounded-xl flex items-center justify-center shadow-lg">
                         <i class="fas fa-boxes text-2xl text-accent"></i>

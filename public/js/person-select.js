@@ -60,6 +60,9 @@
             '.ps-native{position:absolute!important;left:0;bottom:0;width:100%!important;height:1px!important;opacity:0!important;pointer-events:none!important;border:0!important;padding:0!important;margin:0!important}' +
             '.ps-trigger{display:flex!important;align-items:center;gap:.4rem;flex-wrap:wrap;min-height:2.5rem;cursor:pointer;text-align:left;width:100%;box-sizing:border-box}' +
             '.ps-trigger.ps-disabled{cursor:not-allowed;opacity:.65}' +
+            '.ps-trigger.wp-select{background-image:none}' +
+            '.ps-default{width:100%;padding:1rem;border:2px solid #e2e8f0;border-radius:12px;background:#f8f9fa;font-size:.95rem;color:#1a1a1a}' +
+            '.ps-default:focus,.ps-open .ps-default{background:#fff}' +
             '.ps-trigger .ps-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
             '.ps-trigger .ps-placeholder{color:#9ca3af}' +
             '.ps-trigger .ps-caret{margin-left:auto;color:#9ca3af;font-size:.75rem;transition:transform .15s}' +
@@ -136,11 +139,15 @@
         select.dataset.psReady = '1';
         injectCss();
 
-        var copied = null;
+        var copied = null, sinEstilo = false;
         if (!select.className.trim()) {
             var cs = window.getComputedStyle(select);
-            copied = {};
-            COPY_STYLES.forEach(function (p) { copied[p] = cs[p]; });
+            // Select sin CSS propio (borde por defecto del navegador): usa el input estándar de Ware-Pro
+            sinEstilo = cs.borderTopColor === 'rgb(118, 118, 118)' || cs.borderTopColor === 'rgb(133, 133, 133)' || cs.borderTopStyle === 'inset' || parseFloat(cs.borderTopWidth) === 0;
+            if (!sinEstilo) {
+                copied = {};
+                COPY_STYLES.forEach(function (p) { copied[p] = cs[p]; });
+            }
         }
 
         var multiple = select.multiple;
@@ -156,7 +163,7 @@
         wrap.appendChild(select);
 
         var trigger = document.createElement('div');
-        trigger.className = (select.className || '') + ' ps-trigger';
+        trigger.className = (sinEstilo ? 'wp-input ps-default' : (select.className || '')) + ' ps-trigger';
         trigger.tabIndex = 0;
         trigger.setAttribute('role', 'combobox');
         if (copied) Object.keys(copied).forEach(function (p) { if (copied[p]) trigger.style[p] = copied[p]; });

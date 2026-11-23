@@ -125,7 +125,7 @@ if ($tablero_id) {
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     
-    <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-6">
+    <div class="wp-hero flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-3xl font-bold text-gray-900 border-l-4 border-gold pl-3">Punto de Control Digital</h1>
             <p class="mt-2 text-sm text-gray-600">Seleccione un área para gestionar su inventario.</p>

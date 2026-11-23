@@ -1,7 +1,7 @@
 <?php
 /**
  * Entrenamientos · DPO
- * Un líder (persona habilitada por el administrador) registra a quién entrenó con una foto o video.
+ * Un líder (persona habilitada por el administrador) registra a quién entrenó con una foto.
  * El cumplimiento de un líder es: días con al menos un registro / días laborables transcurridos.
  * Requiere core/config.php cargado ($pdo, getOperacionActiva()).
  */
@@ -12,14 +12,11 @@ const DPO_ROLES_ADMIN = ['super_admin', 'admin', 'supervisor'];
 /** Límites de evidencia (el navegador comprime antes de subir; esto es la última barrera). */
 const DPO_MAX_IMAGEN = 3 * 1024 * 1024;
 const DPO_MAX_MINIATURA = 400 * 1024;
-const DPO_MAX_VIDEO = 40 * 1024 * 1024;
+/** Solo fotos: el DPO se evidencia con imagen. */
 const DPO_MIME = [
     'image/jpeg' => ['imagen', 'jpg'],
     'image/webp' => ['imagen', 'webp'],
     'image/png'  => ['imagen', 'png'],
-    'video/mp4'  => ['video', 'mp4'],
-    'video/webm' => ['video', 'webm'],
-    'video/quicktime' => ['video', 'mov'],
 ];
 
 function dpoEsAdmin(): bool {

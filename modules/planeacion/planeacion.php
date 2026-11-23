@@ -126,7 +126,7 @@ $horarios_default = [
     <div class="max-w-[1800px] mx-auto p-4 md:p-8">
         
         
-        <div class="bg-white p-6 rounded-xl shadow-sm mb-6 border-l-[5px] border-brand-400 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+        <div class="wp-hero flex flex-col xl:flex-row xl:items-center justify-between gap-6">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-1 flex items-center gap-3">
                     <i class="fas fa-calendar-alt text-brand-400"></i> Planeación Semanal
