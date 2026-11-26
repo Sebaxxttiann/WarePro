@@ -265,6 +265,8 @@ require_once '../../core/header.php';
 (function () {
     const API = WAREPRO_BASE_URL + '/api/entrenamientos/dpo.php';
     const RAIZ = WAREPRO_BASE_URL + '/';
+    const PILARES = <?= json_encode(DPO_PILARES, JSON_UNESCAPED_UNICODE) ?>;
+    const txtPilares = v => (v || '').split(',').filter(Boolean).map(k => PILARES[k] || k).join(', ');
     const MES = <?= json_encode(sprintf('%04d-%02d', $anio, $mes)) ?>;
     const HOY = <?= json_encode(date('Y-m-d')) ?>;
     const $ = s => document.querySelector(s);
@@ -338,7 +340,7 @@ require_once '../../core/header.php';
             $('#celRegs').innerHTML = j.data.map(r => '<div class="cel-reg">' +
                 '<button type="button" class="en-thumb" data-ver="' + esc(r.archivo) + '" data-nom="' + esc(r.colaborador) + '">' +
                 (r.miniatura ? '<img loading="lazy" src="' + RAIZ + esc(r.miniatura) + '" alt="">' : '<span class="en-sin"><i class="fas fa-image"></i></span>') + '</button>' +
-                '<div class="tx"><b>' + esc(r.colaborador) + '</b>' + esc(r.created_at.slice(11, 16)) + (r.observacion ? ' · ' + esc(r.observacion) : '') + '</div>' +
+                '<div class="tx"><b>' + esc(r.colaborador) + '</b>' + esc(r.created_at.slice(11, 16)) + (r.pilares ? ' · ' + esc(txtPilares(r.pilares)) : '') + (r.observacion ? ' · ' + esc(r.observacion) : '') + '</div>' +
                 '<div class="bt"><button type="button" class="wp-btn wp-btn-ghost wp-btn-sm" data-mover="' + r.id + '" title="Cambiar fecha"><i class="fas fa-calendar-alt"></i></button>' +
                 '<button type="button" class="wp-btn wp-btn-danger wp-btn-sm" data-borrar="' + r.id + '" title="Eliminar"><i class="fas fa-trash"></i></button></div></div>').join('');
         } catch (e) { $('#celRegs').innerHTML = '<p class="wp-sub">No se pudieron cargar los registros.</p>'; }

@@ -190,7 +190,124 @@
         if (abiertos.length) cerrar(abiertos[abiertos.length - 1]);
     });
 
+    // ---------- Normalizador: modales, inputs y botones de cualquier página al estilo de rotura ----------
+    var EXCLUIR = '.main-header, .user-menu, .notifications-dropdown, .swal2-container, .flatpickr-calendar, .ps-wrap, .ps-panel,' +
+        ' .dataTables_filter, .dataTables_length, .dataTables_paginate, .wp-modal, [data-wpx="off"]';
+    var hechos = typeof WeakSet === 'function' ? new WeakSet() : null;
+    function visto(el) { if (!hechos) return false; if (hechos.has(el)) return true; hechos.add(el); return false; }
+    function alfa(c) {
+        if (!c || c === 'transparent') return 0;
+        var m = c.match(/rgba?\(([^)]+)\)/); if (!m) return 1;
+        var p = m[1].split(','); return p.length > 3 ? parseFloat(p[3]) : 1;
+    }
+    function texto(el) { return (el.textContent || el.value || '').replace(/\s+/g, ' ').trim(); }
+    function esCerrar(b) {
+        var t = texto(b), c = (b.className && b.className.baseVal === undefined ? b.className : '') + ' ' + (b.id || '');
+        return /^(×|✕|✖|x|X)$/.test(t) || (!t && b.querySelector('.fa-times, .fa-xmark, .fa-close, .fa-times-circle, .fa-circle-xmark')) || (/close|cerrar/i.test(c) && t.length < 3);
+    }
+
+    function normalizarModal(m) {
+        if (visto(m) || m.closest(EXCLUIR)) return;
+        if (getComputedStyle(m).position !== 'fixed') return;
+        // la caja: primer descendiente con fondo opaco que no sea un fondo oscuro de pantalla completa
+        var caja = null, cola = [].slice.call(m.children), n = 0;
+        while (cola.length && n++ < 40) {
+            var el = cola.shift(), cs = getComputedStyle(el);
+            var fondoPantalla = /\binset-0\b/.test(el.className) || (cs.position === 'absolute' && cs.top === '0px' && cs.bottom === '0px');
+            if (!fondoPantalla && alfa(cs.backgroundColor) >= 0.95 && el.tagName !== 'BUTTON') { caja = el; break; }
+            cola = cola.concat([].slice.call(el.children));
+        }
+        if (!caja) return;
+        if (alfa(getComputedStyle(m).backgroundColor) > 0) m.classList.add('wpx-bg');
+        m.classList.add('wpx-modal');
+        caja.classList.add('wpx-box');
+        if (parseFloat(getComputedStyle(caja).paddingTop) >= 16) caja.classList.add('wpx-pad');
+
+        // cabecera: primer hijo con un título y sin campos
+        var cab = null, h = null;
+        var hijos = [].slice.call(caja.children);
+        for (var i = 0; i < Math.min(hijos.length, 3) && !cab; i++) {
+            var c = hijos[i];
+            if (/^H[1-5]$/.test(c.tagName)) { h = c; break; }
+            var t = c.querySelector('h1, h2, h3, h4, h5, .modal-title');
+            if (t && !c.querySelector('input:not([type=hidden]), select, textarea, table') && texto(c).length < 200) { cab = c; h = t; }
+        }
+        if (!h) {
+            var t1 = caja.querySelector('h1, h2, h3, h4, .modal-title'), c1 = caja.querySelector('input:not([type=hidden]), select, textarea');
+            if (t1 && (!c1 || (t1.compareDocumentPosition(c1) & Node.DOCUMENT_POSITION_FOLLOWING))) h = t1;
+        }
+        if (cab) cab.classList.add('wpx-head');
+        if (h) h.classList.add('wpx-title');
+        var zona = caja;
+        [].forEach.call(zona.querySelectorAll('button, a, span, i, div[onclick]'), function (b) {
+            if (b.closest('.wpx-close')) return;
+            if (esCerrar(b) && ((cab && cab.contains(b)) || b.parentElement === caja || (b.parentElement && b.parentElement.parentElement === caja))) b.classList.add('wpx-close');
+        });
+        // pie: el contenedor del botón de guardar si solo tiene botones
+        var enviar = caja.querySelectorAll('button[type=submit], input[type=submit]');
+        var ultimo = enviar[enviar.length - 1];
+        if (ultimo && ultimo.parentElement && ultimo.parentElement !== caja && ultimo.parentElement.tagName !== 'FORM') {
+            var p = ultimo.parentElement;
+            var soloBotones = [].every.call(p.children, function (x) { return /^(BUTTON|A|INPUT)$/.test(x.tagName); });
+            if (soloBotones && p.children.length >= 2) p.classList.add('wpx-foot');
+        }
+    }
+
+    var TIPOS_NO = /^(checkbox|radio|hidden|range|color|submit|button|reset|image)$/;
+    function normalizarCampo(el) {
+        if (visto(el)) return;
+        if (el.tagName === 'INPUT' && TIPOS_NO.test(el.type)) return;
+        if (el.closest(EXCLUIR) || /\b(wp-input|wp-select|wp-textarea|wp-fp-auto|ps-native)\b/.test(el.className)) return;
+        var cs = getComputedStyle(el);
+        // campos embebidos en un contenedor ya diseñado (sin fondo ni borde propios): se dejan
+        if (alfa(cs.backgroundColor) < 0.05 && parseFloat(cs.borderTopWidth) === 0 && parseFloat(cs.borderBottomWidth) === 0) return;
+        el.classList.add('wpx-in');
+        if (el.closest('td, .dataTable') || parseFloat(cs.fontSize) < 13) el.classList.add('wpx-in-sm');
+    }
+
+    var ACCIONES = [
+        ['wpx-danger', /\b(eliminar|borrar|rechazar|anular|quitar)\b/],
+        ['wpx-secondary', /\b(cancelar|cerrar|volver|limpiar|regresar|atr[aá]s|salir)\b/],
+        ['wpx-success', /\b(excel|exportar|descargar)\b/],
+        ['wpx-primary', /\b(guardar|registrar|agregar|añadir|nuevo|nueva|crear|enviar|subir|actualizar|confirmar|filtrar|buscar|aplicar|iniciar|finalizar|aceptar|continuar|consultar|generar|cargar|asignar|aprobar|editar|programar)\b/]
+    ];
+    function normalizarBoton(b) {
+        if (visto(b)) return;
+        if (b.closest(EXCLUIR) || b.closest('[role=tablist], nav, .tabs, .tab-container') || b.getAttribute('role') === 'tab') return;
+        var c = typeof b.className === 'string' ? b.className : '';
+        if (/\b(wp-btn|wpx-close|wp-modal-close|paginate_button|page-link|ps-)/.test(c) || /tab|toggle|chip|pill|filtro|filter|dropdown|menu|seg-|day|dia/i.test(c)) return;
+        var t = texto(b).toLowerCase();
+        if (!t || t.length > 40) return;
+        for (var i = 0; i < ACCIONES.length; i++) {
+            if (ACCIONES[i][1].test(t)) {
+                b.classList.add('wpx-btn', ACCIONES[i][0]);
+                if (b.closest('td') || (b.offsetHeight && b.offsetHeight < 34)) b.classList.add('wpx-btn-sm');
+                return;
+            }
+        }
+    }
+
+    function normalizar(raiz) {
+        raiz = raiz && raiz.querySelectorAll ? raiz : document;
+        try {
+            [].forEach.call(raiz.querySelectorAll('.modal, .m-bg, .modal-overlay, .mt-modal, .modal-wrap, [id*="modal" i], [id*="Modal"]'), normalizarModal);
+            [].forEach.call(raiz.querySelectorAll('input, select, textarea'), normalizarCampo);
+            [].forEach.call(raiz.querySelectorAll('button, a[class*="btn"], input[type=submit], input[type=button]'), normalizarBoton);
+        } catch (e) { /* nunca romper la página por estética */ }
+    }
+    var pendienteN = null;
+    function observarNormalizar() {
+        new MutationObserver(function (muts) {
+            for (var i = 0; i < muts.length; i++) if (muts[i].addedNodes.length) {
+                clearTimeout(pendienteN);
+                pendienteN = setTimeout(function () { normalizar(document); }, 120);
+                return;
+            }
+        }).observe(document.body, { childList: true, subtree: true });
+    }
+
     window.WP = {
+        normalizar: normalizar,
         modal: { abrir: abrir, cerrar: cerrar },
         fecha: function (el, opciones) {
             return cargarFlatpickr().then(function (fp) { return fp(el, opcionesBase(opciones || {})); });
@@ -215,7 +332,10 @@
         });
     }
 
-    function iniciar() { idiomaTablas(); procesar(document); observar(); }
+    function iniciar() {
+        idiomaTablas(); procesar(document); observar();
+        if (document.body.getAttribute('data-wpx') !== 'off') { normalizar(document); observarNormalizar(); }
+    }
     idiomaTablas(); // jQuery ya cargado antes que este script (defer): se registra antes de que las páginas creen sus tablas
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
     else iniciar();
