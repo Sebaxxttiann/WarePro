@@ -58,14 +58,14 @@ require_once '../../core/header.php';
             <div class="en-mod bloq">
                 <div class="ico"><i class="fas fa-lock"></i></div>
                 <h3>Registrar entrenamiento</h3>
-                <p>Aún no estás habilitado como líder DPO. <?= $esAdmin ? 'Agrégate desde el calendario en "Líderes".' : 'Pídele a tu supervisor que te habilite.' ?></p>
+                <p>Aún no estás habilitado como líder DPO. <?= $esAdmin ? 'Agrégate desde el calendario en "Líderes".' : 'Pídele a un administrador que te habilite.' ?></p>
             </div>
         <?php endif; ?>
 
         <a class="en-mod" href="dpo_evidencias.php">
             <div class="ico"><i class="fas fa-images"></i></div>
-            <h3><?= $esAdmin ? 'Evidencias' : 'Mis evidencias' ?></h3>
-            <p><?= $esAdmin ? 'Todas las fotos de la operación, con filtros por líder, persona y fecha.' : 'Las fotos que has registrado.' ?></p>
+            <h3><?= $esAdmin ? 'Evidencias' : ($esLider ? 'Mis evidencias' : 'Mis entrenamientos') ?></h3>
+            <p><?= $esAdmin ? 'Todas las fotos de la operación, con filtros por líder, persona y fecha.' : ($esLider ? 'Las fotos que has registrado.' : 'Los entrenamientos que te han hecho, mes a mes.') ?></p>
             <span class="pie"><i class="fas fa-arrow-right"></i> Ver evidencias</span>
         </a>
 

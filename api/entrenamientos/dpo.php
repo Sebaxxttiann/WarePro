@@ -3,7 +3,7 @@
  * API de Entrenamientos · DPO. Todas las respuestas: {success, ...} o {success:false, message}.
  *
  * Líder (registrar):   subir, mis_registros
- * Consulta:            evidencias
+ * Consulta:            evidencias, resumen_personal
  * Administración:      lideres, agregar_lider, quitar_lider, toggle_dia, toggle_celda,
  *                      registros_celda, cambiar_fecha, eliminar
  */
@@ -27,7 +27,7 @@ function fallar(string $mensaje, int $codigo = 400): void {
     responder(['success' => false, 'message' => $mensaje], $codigo);
 }
 function exigirAdmin(): void {
-    if (!dpoEsAdmin()) fallar('Solo administradores y supervisores pueden hacer esto.', 403);
+    if (!dpoEsAdmin()) fallar('Solo los administradores pueden hacer esto.', 403);
 }
 function fechaValida(string $f): bool {
     $d = DateTime::createFromFormat('Y-m-d', $f);
@@ -129,11 +129,15 @@ try {
         $pagina = max(1, (int)($_GET['pagina'] ?? 1));
         $where = ['r.operacion_id = ?'];
         $params = [$op];
-        // Quien no es administrador solo ve lo que registró
-        if (!dpoEsAdmin()) { $where[] = 'r.lider_id = ?'; $params[] = $yo; }
-        elseif (!empty($_GET['lider'])) { $where[] = 'r.lider_id = ?'; $params[] = (int)$_GET['lider']; }
-        if (!empty($_GET['colaborador'])) { $where[] = 'r.colaborador_id = ?'; $params[] = (int)$_GET['colaborador']; }
-        elseif (!empty($_GET['q'])) { $where[] = 'c.nombre LIKE ?'; $params[] = '%' . $_GET['q'] . '%'; }
+        // Administrador: todo. Líder: lo que registró. Cualquier otro cargo: solo los entrenamientos que le hicieron.
+        $modo = dpoEsAdmin() ? 'admin' : (dpoEsLider($pdo, $op, $yo) ? 'lider' : 'personal');
+        if ($modo === 'personal') { $where[] = 'r.colaborador_id = ?'; $params[] = $yo; }
+        else {
+            if ($modo === 'lider') { $where[] = 'r.lider_id = ?'; $params[] = $yo; }
+            elseif (!empty($_GET['lider'])) { $where[] = 'r.lider_id = ?'; $params[] = (int)$_GET['lider']; }
+            if (!empty($_GET['colaborador'])) { $where[] = 'r.colaborador_id = ?'; $params[] = (int)$_GET['colaborador']; }
+            elseif (!empty($_GET['q'])) { $where[] = 'c.nombre LIKE ?'; $params[] = '%' . $_GET['q'] . '%'; }
+        }
         if (!empty($_GET['desde']) && fechaValida($_GET['desde'])) { $where[] = 'r.fecha >= ?'; $params[] = $_GET['desde']; }
         if (!empty($_GET['hasta']) && fechaValida($_GET['hasta'])) { $where[] = 'r.fecha <= ?'; $params[] = $_GET['hasta']; }
         $w = implode(' AND ', $where);
@@ -152,6 +156,20 @@ try {
         $stmt->execute($params);
         responder(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC), 'total' => $total,
                    'pagina' => $pagina, 'paginas' => max(1, (int)ceil($total / $porPagina))]);
+
+    // Entrenamientos que le han hecho al usuario: mes elegido, mes anterior y total
+    case 'resumen_personal':
+        $mes = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $_GET['mes'] ?? '') ? $_GET['mes'] : date('Y-m');
+        $ini = $mes . '-01';
+        $antIni = date('Y-m-01', strtotime($ini . ' -1 month'));
+        $stmt = $pdo->prepare("SELECT
+                COALESCE(SUM(fecha BETWEEN ? AND LAST_DAY(?)), 0) AS mes,
+                COALESCE(SUM(fecha BETWEEN ? AND LAST_DAY(?)), 0) AS anterior,
+                COUNT(*) AS total
+            FROM dpo_registros WHERE operacion_id = ? AND colaborador_id = ?");
+        $stmt->execute([$ini, $ini, $antIni, $antIni, $op, $yo]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
+        responder(['success' => true, 'mes' => (int)$r['mes'], 'anterior' => (int)$r['anterior'], 'total' => (int)$r['total']]);
 
     // ------------------------------------------------------------------ Líderes
     case 'lideres':

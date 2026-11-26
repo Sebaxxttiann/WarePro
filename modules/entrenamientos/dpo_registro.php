@@ -68,7 +68,7 @@ require_once '../../core/header.php';
     <div class="wp-card"><div class="wp-card-body wp-empty">
         <i class="fas fa-lock"></i>
         <b>No estás habilitado como líder DPO</b>
-        <p>Pídele a tu supervisor que te agregue en el calendario de DPO.</p>
+        <p>Pídele a un administrador que te agregue en el calendario de DPO.</p>
         <?php if (dpoEsAdmin()): ?><a class="wp-btn wp-btn-primary" href="dpo_calendario.php"><i class="fas fa-calendar-check"></i> Ir al calendario</a><?php endif; ?>
     </div></div>
 <?php else: ?>

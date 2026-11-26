@@ -6,8 +6,8 @@
  * Requiere core/config.php cargado ($pdo, getOperacionActiva()).
  */
 
-/** Cargos que ven el calendario, eligen líderes y ajustan registros. */
-const DPO_ROLES_ADMIN = ['super_admin', 'admin', 'supervisor'];
+/** Cargos administradores: ven el calendario y todas las evidencias, eligen líderes y ajustan registros. */
+const DPO_ROLES_ADMIN = ['super_admin', 'admin'];
 
 /** Límites de evidencia (el navegador comprime antes de subir; esto es la última barrera). */
 const DPO_MAX_IMAGEN = 3 * 1024 * 1024;
