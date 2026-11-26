@@ -357,3 +357,77 @@ input.flatpickr-input[readonly] { cursor: pointer; }
 :root body .wp-hero.welcome-section p { color: #d1d5db; }
 :root body .wp-hero.welcome-section p strong { color: #fff; }
 :root body .wp-hero.welcome-section .toolbar > * { color: var(--wp-negro); }
+
+/* =====================================================================
+   Normalizador global (warepro-ui.js marca los elementos con .wpx-*)
+   Lleva cualquier modal, botón de acción e input al estilo de rotura,
+   aunque la página use Tailwind o estilos inline (por eso los !important).
+   ===================================================================== */
+.wpx-bg { background: rgba(26, 26, 26, .72) !important; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.wpx-box { background: #fff !important; border: 0 !important; border-radius: 20px !important; box-shadow: 0 25px 60px rgba(0, 0, 0, .3) !important; color: var(--wp-negro); }
+.wpx-box.wpx-pad { padding: 2rem !important; }
+.wpx-head { background: #fff !important; background-image: none !important; color: var(--wp-negro) !important;
+    border: 0 !important; border-bottom: 3px solid var(--wp-oro) !important; border-radius: 20px 20px 0 0 !important;
+    padding: 1.5rem 2rem 1rem !important; margin: 0 0 1.5rem !important; box-shadow: none !important; gap: 1rem; }
+.wpx-box.wpx-pad > .wpx-head { padding: 0 0 1rem !important; border-radius: 0 !important; }
+.wpx-head::before, .wpx-head::after { display: none !important; }
+.wpx-title { color: var(--wp-negro) !important; font-size: clamp(1.15rem, 2.6vw, 1.75rem) !important; font-weight: 700 !important;
+    line-height: 1.25 !important; margin: 0 !important; text-transform: none !important; letter-spacing: normal !important; }
+.wpx-title i, .wpx-title svg { color: var(--wp-oro) !important; }
+.wpx-title * { color: inherit; }
+.wpx-title i { color: var(--wp-oro) !important; }
+.wpx-head :is(p, small, .text-sm, .text-xs) { color: var(--wp-gris) !important; }
+.wpx-close { width: 40px !important; height: 40px !important; min-width: 40px; padding: 0 !important; border-radius: 50% !important;
+    display: inline-flex !important; align-items: center !important; justify-content: center !important;
+    background: transparent !important; border: 0 !important; color: var(--wp-gris) !important; font-size: 1.5rem !important;
+    line-height: 1 !important; cursor: pointer; transition: background .2s, color .2s; box-shadow: none !important; flex-shrink: 0; }
+.wpx-close:hover { background: var(--wp-gris-claro) !important; color: #dc3545 !important; }
+.wpx-close i { color: inherit !important; font-size: 1.15rem !important; }
+.wpx-foot { border-top: 1px solid var(--wp-borde) !important; background: transparent !important; padding-top: 1.25rem !important; margin-top: 1.5rem !important;
+    display: flex; gap: .75rem; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Labels dentro de modales */
+.wpx-box label:not(.wpx-chk):not(:has(> input[type="checkbox"], > input[type="radio"])) {
+    color: var(--wp-negro) !important; font-weight: 600 !important; font-size: .92rem !important; text-transform: none !important; letter-spacing: normal !important; }
+.wpx-box label i { color: var(--wp-oro) !important; }
+
+/* Inputs (en modales y en las páginas) */
+.wpx-in { padding: .8rem 1rem !important; border: 2px solid var(--wp-borde) !important; border-radius: 12px !important;
+    background-color: var(--wp-gris-claro) !important; color: var(--wp-negro) !important; font-size: .95rem !important;
+    font-family: inherit; box-shadow: none !important; outline: none !important; min-height: 46px; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+.wpx-in.wpx-in-sm { padding: .5rem .75rem !important; min-height: 38px; font-size: .88rem !important; border-radius: 10px !important; }
+textarea.wpx-in { min-height: 90px; line-height: 1.5; }
+.wpx-in:focus { border-color: var(--wp-oro) !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(255, 215, 0, .15) !important; }
+.wpx-in:disabled, .wpx-in[readonly]:not(.flatpickr-input) { background-color: #eef0f3 !important; color: var(--wp-gris) !important; cursor: not-allowed; }
+.wpx-in::placeholder { color: #9ca3af !important; }
+select.wpx-in { appearance: none !important; -webkit-appearance: none !important; padding-right: 2.5rem !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231a1a1a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important; background-position: right 1rem center !important; background-size: 12px !important; }
+select.wpx-in[multiple] { background-image: none !important; padding-right: 1rem !important; }
+input[type="file"].wpx-in { padding: .45rem .6rem !important; cursor: pointer; width: 100%; max-width: 100%; min-width: 0; font-size: .8rem !important; color: var(--wp-gris) !important; }
+input[type="file"].wpx-in::file-selector-button { border: 0; border-radius: 8px; background: var(--wp-grad-negro); color: var(--wp-oro); font-weight: 600; padding: .35rem .7rem; margin-right: .5rem; font-size: .78rem; cursor: pointer; }
+
+/* Botones */
+.wpx-btn { border-radius: 12px !important; font-weight: 600 !important; font-family: inherit; display: inline-flex !important; align-items: center; justify-content: center; gap: .5rem;
+    padding: .75rem 1.5rem !important; border: 0 !important; cursor: pointer; text-decoration: none !important; transition: transform .2s, box-shadow .2s, filter .2s !important; text-transform: none !important; letter-spacing: normal !important; }
+.wpx-btn.wpx-btn-sm { padding: .5rem 1rem !important; font-size: .88rem !important; border-radius: 10px !important; }
+.wpx-btn:not(:disabled):hover { transform: translateY(-2px); }
+.wpx-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.wpx-primary { background: var(--wp-grad-oro) !important; color: var(--wp-negro) !important; box-shadow: 0 4px 15px rgba(255, 215, 0, .3) !important; }
+.wpx-primary:not(:disabled):hover { box-shadow: 0 8px 25px rgba(255, 215, 0, .45) !important; }
+.wpx-primary i { color: var(--wp-negro) !important; }
+.wpx-secondary { background: #e9ecef !important; color: var(--wp-negro) !important; box-shadow: none !important; }
+.wpx-secondary:not(:disabled):hover { background: #dee2e6 !important; }
+.wpx-secondary i { color: var(--wp-negro) !important; }
+.wpx-danger { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important; color: #fff !important; box-shadow: 0 4px 15px rgba(220, 53, 69, .25) !important; }
+.wpx-danger i { color: #fff !important; }
+.wpx-success { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important; color: #fff !important; box-shadow: 0 4px 15px rgba(40, 167, 69, .25) !important; }
+.wpx-success i { color: #fff !important; }
+.wpx-dark { background: var(--wp-grad-negro) !important; color: var(--wp-oro) !important; box-shadow: 0 4px 15px rgba(0, 0, 0, .2) !important; }
+.wpx-dark i { color: var(--wp-oro) !important; }
+/* dentro del hero negro, los secundarios van en vidrio dorado */
+.wp-hero .wpx-secondary, :is(.page-header, .content-header, .header-section) .wpx-secondary { background: rgba(255, 215, 0, .1) !important; color: var(--wp-oro) !important; border: 1px solid rgba(255, 215, 0, .45) !important; }
+.wp-hero .wpx-secondary i, :is(.page-header, .content-header, .header-section) .wpx-secondary i { color: var(--wp-oro) !important; }
+
+.wpx-title:has(> i:first-child) { display: flex; align-items: center; gap: .75rem; }
+.text-center > .wpx-title, .wpx-title.text-center { justify-content: center; }

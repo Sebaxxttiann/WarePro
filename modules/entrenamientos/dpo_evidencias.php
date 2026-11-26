@@ -87,6 +87,8 @@ require_once '../../core/header.php';
 (function () {
     const API = WAREPRO_BASE_URL + '/api/entrenamientos/dpo.php';
     const RAIZ = WAREPRO_BASE_URL + '/';
+    const PILARES = <?= json_encode(DPO_PILARES, JSON_UNESCAPED_UNICODE) ?>;
+    const txtPilares = v => (v || '').split(',').filter(Boolean).map(k => PILARES[k] || k).join(', ');
     const ES_ADMIN = <?= $esAdmin ? 'true' : 'false' ?>;
     const INICIO = { desde: <?= json_encode(date('Y-m-01')) ?>, hasta: <?= json_encode(date('Y-m-d')) ?> };
     const $ = s => document.querySelector(s);
@@ -159,6 +161,7 @@ require_once '../../core/header.php';
         $('#verDet').innerHTML = '<dt>Fecha</dt><dd>' + fmtFecha(r.fecha) + '</dd>' +
             '<dt>Líder</dt><dd>' + esc(r.lider) + '</dd>' +
             '<dt>Entrenado</dt><dd>' + esc(r.colaborador) + '</dd>' +
+            (r.pilares ? '<dt>Pilar impactado</dt><dd>' + esc(txtPilares(r.pilares)) + '</dd>' : '') +
             (r.observacion ? '<dt>Observación</dt><dd>' + esc(r.observacion) + '</dd>' : '') +
             '<dt>Tamaño</dt><dd>' + mb(+r.peso_bytes) + '</dd>';
         $('#verDescargar').href = RAIZ + r.archivo;

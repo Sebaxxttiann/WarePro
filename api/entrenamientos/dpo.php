@@ -16,6 +16,7 @@ header('Content-Type: application/json; charset=utf-8');
 $op = (int)getOperacionActiva();
 $yo = (int)$_SESSION['usuario_id'];
 $accion = $_POST['action'] ?? $_GET['action'] ?? '';
+if (in_array($accion, ['subir', 'evidencias', 'registros_celda'], true)) dpoAsegurarPilares($pdo);
 
 function responder(array $data, int $codigo = 200): void {
     http_response_code($codigo);
@@ -72,6 +73,12 @@ try {
         $fecha = $_POST['fecha'] ?? $hoy;
         if (!in_array($fecha, [$hoy, date('Y-m-d', strtotime('-1 day'))], true)) $fecha = $hoy;
 
+        // Pilar(es) impactados: al menos uno de la lista
+        $pilares = $_POST['pilares'] ?? [];
+        if (!is_array($pilares)) $pilares = explode(',', (string)$pilares);
+        $pilares = array_values(array_intersect(array_keys(DPO_PILARES), array_map('trim', $pilares)));
+        if (!$pilares) fallar('Selecciona al menos un pilar impactado.');
+
         $arch = $_FILES['archivo'] ?? null;
         if (!$arch || $arch['error'] !== UPLOAD_ERR_OK) {
             $err = $arch['error'] ?? UPLOAD_ERR_NO_FILE;
@@ -103,9 +110,9 @@ try {
 
         $obs = trim(mb_substr((string)($_POST['observacion'] ?? ''), 0, 255, 'UTF-8'));
 
-        $stmt = $pdo->prepare("INSERT INTO dpo_registros (operacion_id, lider_id, colaborador_id, fecha, tipo, archivo, miniatura, peso_bytes, duracion_seg, observacion)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$op, $yo, $colaborador, $fecha, $tipo, $archivoRel, $miniRel, (int)$arch['size'], null, $obs !== '' ? $obs : null]);
+        $stmt = $pdo->prepare("INSERT INTO dpo_registros (operacion_id, lider_id, colaborador_id, fecha, pilares, tipo, archivo, miniatura, peso_bytes, duracion_seg, observacion)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$op, $yo, $colaborador, $fecha, implode(',', $pilares), $tipo, $archivoRel, $miniRel, (int)$arch['size'], null, $obs !== '' ? $obs : null]);
         responder(['success' => true, 'message' => "Entrenamiento de $nombreColaborador registrado.", 'id' => (int)$pdo->lastInsertId()]);
 
     case 'mis_registros':
@@ -135,7 +142,7 @@ try {
         $stmt->execute($params);
         $total = (int)$stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("SELECT r.id, r.fecha, r.tipo, r.archivo, r.miniatura, r.duracion_seg, r.observacion, r.peso_bytes,
+        $stmt = $pdo->prepare("SELECT r.id, r.fecha, r.pilares, r.tipo, r.archivo, r.miniatura, r.duracion_seg, r.observacion, r.peso_bytes,
                                       c.nombre AS colaborador, l.nombre AS lider
                                FROM dpo_registros r
                                JOIN usuarios c ON c.id = r.colaborador_id
@@ -204,7 +211,7 @@ try {
         exigirAdmin();
         $fecha = $_GET['fecha'] ?? '';
         if (!fechaValida($fecha)) fallar('Fecha inválida.');
-        $stmt = $pdo->prepare("SELECT r.id, r.fecha, r.tipo, r.archivo, r.miniatura, r.duracion_seg, r.observacion, r.created_at, c.nombre AS colaborador
+        $stmt = $pdo->prepare("SELECT r.id, r.fecha, r.pilares, r.tipo, r.archivo, r.miniatura, r.duracion_seg, r.observacion, r.created_at, c.nombre AS colaborador
                                FROM dpo_registros r JOIN usuarios c ON c.id = r.colaborador_id
                                WHERE r.operacion_id = ? AND r.lider_id = ? AND r.fecha = ? ORDER BY r.created_at");
         $stmt->execute([$op, (int)($_GET['lider_id'] ?? 0), $fecha]);

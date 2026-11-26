@@ -34,6 +34,23 @@ require_once '../../core/header.php';
     .rg-lista .nom { font-size: .8rem; font-weight: 600; margin-top: .4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rg-lista .fec { font-size: .72rem; color: var(--wp-gris); }
     @media (max-width: 560px) { .rg-opciones { grid-template-columns: 1fr; } .rg-lider .wp-badge { display: none; } }
+    .rg-pilares { position: relative; }
+    .rg-pil-btn { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; text-align: left; cursor: pointer; min-height: 50px; font: inherit; }
+    .rg-pil-btn > i { color: var(--wp-gris); transition: transform .2s; flex-shrink: 0; }
+    .rg-pilares.on .rg-pil-btn { border-color: var(--wp-oro); background: #fff; }
+    .rg-pilares.on .rg-pil-btn > i { transform: rotate(180deg); }
+    .rg-pil-ph { color: #9ca3af; }
+    .rg-pil-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .rg-pil-chip { background: var(--wp-grad-oro); color: var(--wp-negro); font-weight: 600; font-size: .8rem; padding: .2rem .65rem; border-radius: 999px; }
+    .rg-pil-panel { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: #fff; border: 2px solid var(--wp-borde); border-radius: var(--wp-radio); box-shadow: var(--wp-sombra-lg); padding: .4rem; z-index: 30; }
+    .rg-pilares.on .rg-pil-panel { display: block; animation: wpFadeIn .15s ease-out; }
+    .rg-pil-op { position: relative; display: flex; align-items: center; gap: .75rem; padding: .75rem .85rem; border-radius: 10px; cursor: pointer; font-weight: 500; }
+    .rg-pil-op:hover { background: var(--wp-gris-claro); }
+    .rg-pil-op input { position: absolute; opacity: 0; pointer-events: none; }
+    .rg-pil-check { width: 22px; height: 22px; border: 2px solid var(--wp-borde); border-radius: 6px; display: grid; place-items: center; color: transparent; font-size: .7rem; transition: all .15s; flex-shrink: 0; }
+    .rg-pil-op input:checked + .rg-pil-check { background: var(--wp-grad-oro); border-color: var(--wp-oro); color: var(--wp-negro); }
+    .rg-pil-op:has(input:checked) { background: #fffbea; }
+    .rg-pil-op input:focus-visible + .rg-pil-check { box-shadow: 0 0 0 3px rgba(255, 215, 0, .35); }
 </style>
 
 <div class="wp-page estrecho">
@@ -105,8 +122,20 @@ require_once '../../core/header.php';
                     <label><input type="radio" name="fecha" value="<?= date('Y-m-d') ?>" checked><span><i class="fas fa-sun"></i> Hoy · <?= date('d/m') ?></span></label>
                     <label><input type="radio" name="fecha" value="<?= date('Y-m-d', strtotime('-1 day')) ?>"><span><i class="fas fa-history"></i> Ayer · <?= date('d/m', strtotime('-1 day')) ?></span></label>
                 </div>
+                <label class="wp-label" id="pilLbl" style="margin-top:1.5rem"><i class="fas fa-layer-group"></i> Pilar impactado *</label>
+                <div class="rg-pilares" id="pilares">
+                    <button type="button" class="wp-input rg-pil-btn" id="pilBtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pilLbl">
+                        <span id="pilTxt"><span class="rg-pil-ph">Selecciona uno o varios pilares</span></span><i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="rg-pil-panel" id="pilPanel" role="listbox" aria-multiselectable="true">
+                        <?php foreach (DPO_PILARES as $k => $v): ?>
+                        <label class="rg-pil-op"><input type="checkbox" name="pilares[]" value="<?= $k ?>"><span class="rg-pil-check"><i class="fas fa-check"></i></span><?= htmlspecialchars($v) ?></label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <p class="wp-ayuda">Puedes marcar varios.</p>
                 <label class="wp-label" for="obs" style="margin-top:1.5rem"><i class="fas fa-sticky-note"></i> Observación</label>
-                <textarea id="obs" name="observacion" class="wp-textarea" maxlength="255" rows="2" placeholder="Opcional. Ej: uso correcto de la estibadora"></textarea>
+                <textarea id="obs" name="observacion" class="wp-textarea" maxlength="255" rows="2" placeholder="Opcional. Ej: se entrenó sobre el mapa de procesos"></textarea>
             </div>
 
             <div class="wp-modal-foot">
@@ -142,6 +171,21 @@ require_once '../../core/header.php';
     const RAIZ = WAREPRO_BASE_URL + '/';
     const $ = s => document.querySelector(s);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // ---------- Pilar impactado (selección múltiple) ----------
+    const pil = $('#pilares'), pilBtn = $('#pilBtn');
+    const pilChecks = () => [...pil.querySelectorAll('input[name="pilares[]"]')];
+    function pintarPilares() {
+        const sel = pilChecks().filter(c => c.checked);
+        $('#pilTxt').innerHTML = sel.length
+            ? '<span class="rg-pil-chips">' + sel.map(c => '<span class="rg-pil-chip">' + esc(c.parentElement.textContent.trim()) + '</span>').join('') + '</span>'
+            : '<span class="rg-pil-ph">Selecciona uno o varios pilares</span>';
+    }
+    function abrirPilares(si) { pil.classList.toggle('on', si); pilBtn.setAttribute('aria-expanded', si ? 'true' : 'false'); }
+    pilBtn.addEventListener('click', () => abrirPilares(!pil.classList.contains('on')));
+    pil.addEventListener('change', pintarPilares);
+    document.addEventListener('click', e => { if (!pil.contains(e.target)) abrirPilares(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && pil.classList.contains('on')) { abrirPilares(false); pilBtn.focus(); } });
     const aviso = (icon, title, text) => Swal.fire({ icon, title, text, confirmButtonText: 'Entendido' });
     let evidencia = null; // {archivo, miniatura, original}
 
@@ -172,11 +216,14 @@ require_once '../../core/header.php';
         const colab = $('#colaborador').value;
         if (!colab) return aviso('warning', 'Falta la persona', 'Selecciona a la persona que entrenaste.');
         if (!evidencia) return aviso('warning', 'Falta la foto', 'Toma o adjunta la foto del entrenamiento.');
+        const pilares = pilChecks().filter(c => c.checked).map(c => c.value);
+        if (!pilares.length) { abrirPilares(true); return aviso('warning', 'Falta el pilar', 'Selecciona al menos un pilar impactado.'); }
 
         const fd = new FormData();
         fd.append('action', 'subir');
         fd.append('colaborador_id', colab);
         fd.append('fecha', document.querySelector('input[name="fecha"]:checked').value);
+        pilares.forEach(p => fd.append('pilares[]', p));
         fd.append('observacion', $('#obs').value);
         fd.append('archivo', evidencia.archivo, 'evidencia.jpg');
         fd.append('miniatura', evidencia.miniatura, 'miniatura.jpg');
@@ -197,6 +244,7 @@ require_once '../../core/header.php';
             if (j.success) {
                 Swal.fire({ icon: 'success', title: '¡Registrado!', text: j.message, timer: 1800, showConfirmButton: false });
                 evidencia = null; $('#prev').classList.remove('on'); $('#obs').value = '';
+                pilChecks().forEach(c => { c.checked = false; }); pintarPilares();
                 PersonSelect.setValue($('#colaborador'), '');
                 cargarLista();
             } else aviso('error', 'No se pudo guardar', j.message || 'Intenta de nuevo.');

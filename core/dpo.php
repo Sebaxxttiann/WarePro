@@ -19,6 +19,24 @@ const DPO_MIME = [
     'image/png'  => ['imagen', 'png'],
 ];
 
+/** Pilares que puede impactar un entrenamiento (clave guardada => texto visible). */
+const DPO_PILARES = [
+    'almacen'   => 'Almacén',
+    'seguridad' => 'Seguridad',
+    'flota'     => 'Flota',
+    'people'    => 'People',
+    'gestion'   => 'Gestión',
+];
+
+/** Agrega la columna de pilares si la base aún no tiene la migración 2026_11_26_dpo_pilares.sql. */
+function dpoAsegurarPilares(PDO $pdo): void {
+    static $listo = false;
+    if ($listo) return;
+    $listo = true;
+    if ($pdo->query("SHOW COLUMNS FROM dpo_registros LIKE 'pilares'")->fetch()) return;
+    $pdo->exec("ALTER TABLE dpo_registros ADD COLUMN pilares SET('" . implode("','", array_keys(DPO_PILARES)) . "') NULL AFTER fecha");
+}
+
 function dpoEsAdmin(): bool {
     return in_array($_SESSION['cargo'] ?? '', DPO_ROLES_ADMIN, true);
 }
