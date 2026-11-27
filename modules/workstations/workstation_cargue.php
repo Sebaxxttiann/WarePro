@@ -7,6 +7,7 @@ date_default_timezone_set('America/Bogota');
 $operacion_id = wsOperacionId();
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('cargue', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -14,7 +15,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(vehiculos_cargados) as total_vehiculos 
             FROM ows_cargue 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE()
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY
             GROUP BY HOUR(hora) 
             ORDER BY hora_dia ASC
         ");
@@ -24,7 +25,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, SUM(vehiculos_cargados) as total_diario
             FROM ows_cargue 
-            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE())
+            WHERE operacion_id = ? AND fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
@@ -33,7 +34,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_cargados_hoy = $pdo->prepare("
             SELECT SUM(vehiculos_cargados) 
             FROM ows_cargue 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE()
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY
         ");
         $stmt_cargados_hoy->execute([$operacion_id]);
         $cargados_hoy = $stmt_cargados_hoy->fetchColumn() ?: 0;
@@ -41,7 +42,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_planeados_hoy = $pdo->prepare("
             SELECT vehiculos_planeados 
             FROM ows_cargue 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND vehiculos_planeados > 0
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY AND vehiculos_planeados > 0
             ORDER BY id ASC LIMIT 1
         ");
         $stmt_planeados_hoy->execute([$operacion_id]);
@@ -154,6 +155,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -439,7 +441,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             setInterval(moverPantallaMicro, 30000); 
         });

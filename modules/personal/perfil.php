@@ -83,6 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $activo = isset($_POST['activo']) ? 1 : 0;
             $password_nueva = $_POST['password_nueva'];
 
+            $cargo = trim((string)$cargo);
+            if ($nombre === '' || $cedula === '' || $cargo === '') {
+                echo json_encode(['success' => false, 'message' => 'Nombre, cédula y cargo son obligatorios. No se cambió nada.']);
+                exit();
+            }
+
             if ($cargo === 'super_admin' && !$esSuperAdmin) {
                 echo json_encode(['success' => false, 'message' => 'Solo un super_admin puede asignar ese cargo']);
                 exit();
@@ -1577,6 +1583,16 @@ if ($esSuperAdmin) {
 
 
         async function editUser(userId) {
+            let user;
+            try {
+                const resp = await fetch(`../../api/personal/get_user.php?id=${encodeURIComponent(userId)}`, { credentials: 'same-origin' });
+                user = await resp.json();
+                if (!resp.ok || !user || user.error) throw new Error((user && user.error) || 'No se pudieron cargar los datos');
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'No se pudo abrir', text: e.message || 'No se pudieron cargar los datos del usuario.', confirmButtonColor: '#FFD700' });
+                return;
+            }
+
             const { value: formValues } = await Swal.fire({
                 title: 'Editar Usuario',
                 html: `
@@ -1622,17 +1638,20 @@ if ($esSuperAdmin) {
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
                 didOpen: () => {
-                    
-                    fetch(`../../api/personal/get_user.php?id=${userId}`)
-                        .then(response => response.json())
-                        .then(user => {
-                            document.getElementById('edit-nombre').value = user.nombre;
-                            document.getElementById('edit-cedula').value = user.cedula;
-                            document.getElementById('edit-cargo').value = user.cargo;
-                            document.getElementById('edit-activo').checked = user.activo == 1;
-                        });
+                    document.getElementById('edit-nombre').value = user.nombre || '';
+                    document.getElementById('edit-cedula').value = user.cedula || '';
+                    const sel = document.getElementById('edit-cargo');
+                    if (user.cargo && !sel.querySelector(`option[value="${CSS.escape(user.cargo)}"]`)) sel.add(new Option(user.cargo, user.cargo));
+                    sel.value = user.cargo || '';
+                    document.getElementById('edit-activo').checked = user.activo == 1;
                 },
                 preConfirm: () => {
+                    const nombre = document.getElementById('edit-nombre').value.trim();
+                    const cedula = document.getElementById('edit-cedula').value.trim();
+                    if (!nombre || !cedula) {
+                        Swal.showValidationMessage('El nombre y la cédula no pueden quedar vacíos');
+                        return false;
+                    }
                     return {
                         nombre: document.getElementById('edit-nombre').value,
                         cedula: document.getElementById('edit-cedula').value,

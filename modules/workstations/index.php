@@ -22,6 +22,7 @@ function wsResumenes(PDO $pdo, int $op, array $catalogo): array {
 }
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('hub', $operacion_id);
     header('Content-Type: application/json');
     echo json_encode([
         'hora' => date('h:i a'),
@@ -41,7 +42,7 @@ $estados = [
 require_once '../../core/header.php';
 ?>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="../../public/js/ws-poll.js"></script>
 <style>
     body { font-family: 'Poppins', sans-serif; background: #f4f5f7; margin: 0; }
     .wsh-page *, .wsh-page *::before, .wsh-page *::after { box-sizing: border-box; }
@@ -137,7 +138,7 @@ require_once '../../core/header.php';
     const ESTADOS = <?= json_encode($estados, JSON_INVALID_UTF8_SUBSTITUTE) ?>;
     async function refrescar() {
         try {
-            const res = await fetch('index.php?ajax=1', { cache: 'no-store' });
+            const res = await fetch('index.php?ajax=1');
             if (!res.ok) return;
             const data = await res.json();
             if (!data || !data.resumen) return;
@@ -157,7 +158,7 @@ require_once '../../core/header.php';
             if (data.hora) document.getElementById('wsh-hora').textContent = data.hora;
         } catch (e) { /* sin conexión: se reintenta en el próximo ciclo */ }
     }
-    setInterval(refrescar, 60000);
+    wsPoll(refrescar, 60000);
 })();
 </script>
 </body>

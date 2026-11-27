@@ -8,6 +8,7 @@ $operacion_id = wsOperacionId();
 $meta = wsMeta($pdo, $operacion_id, 'Sorting', 380, 1); // cj/h
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('sorting', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -16,7 +17,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora_sorting) as hora_dia, SUM(cajas_sorting) as total_unidades 
             FROM sortiing 
-            WHERE operacion_id = ? AND DATE(fecha_sorting) = CURDATE() AND cajas_sorting IS NOT NULL
+            WHERE operacion_id = ? AND fecha_sorting >= CURDATE() AND fecha_sorting < CURDATE() + INTERVAL 1 DAY AND cajas_sorting IS NOT NULL
             GROUP BY HOUR(hora_sorting) 
             ORDER BY hora_dia ASC
         ");
@@ -27,7 +28,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha_sorting) as dia, ROUND(SUM(cajas_sorting) / COUNT(DISTINCT HOUR(hora_sorting)), 2) as promedio_diario
             FROM sortiing 
-            WHERE operacion_id = ? AND MONTH(fecha_sorting) = MONTH(CURDATE()) AND YEAR(fecha_sorting) = YEAR(CURDATE()) AND cajas_sorting IS NOT NULL
+            WHERE operacion_id = ? AND fecha_sorting >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha_sorting < LAST_DAY(CURDATE()) + INTERVAL 1 DAY AND cajas_sorting IS NOT NULL
             GROUP BY DATE(fecha_sorting) 
             ORDER BY fecha_sorting ASC
         ");
@@ -135,6 +136,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -449,7 +451,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             setInterval(moverPantallaMicro, 30000); 
         });

@@ -12,6 +12,7 @@ $meta = [
 ];
 
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+    wsCacheAjax('vertimiento', $operacion_id);
     header('Content-Type: application/json');
     try {
         $pdo->exec("SET time_zone = '-05:00';");
@@ -20,7 +21,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_diario = $pdo->prepare("
             SELECT HOUR(hora) as hora_dia, SUM(unidades) as total_unidades 
             FROM ows_vertimiento 
-            WHERE operacion_id = ? AND DATE(fecha) = CURDATE() AND actividad = 'VERTIMIENTO'
+            WHERE operacion_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY AND actividad = 'VERTIMIENTO'
             GROUP BY HOUR(hora) 
             ORDER BY hora_dia ASC
         ");
@@ -31,7 +32,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         $stmt_mes = $pdo->prepare("
             SELECT DAY(fecha) as dia, ROUND(SUM(unidades) / COUNT(DISTINCT HOUR(hora)), 2) as promedio_diario
             FROM ows_vertimiento 
-            WHERE operacion_id = ? AND MONTH(fecha) = MONTH(CURDATE()) AND YEAR(fecha) = YEAR(CURDATE()) AND actividad = 'VERTIMIENTO'
+            WHERE operacion_id = ? AND fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY AND actividad = 'VERTIMIENTO'
             GROUP BY DATE(fecha) 
             ORDER BY fecha ASC
         ");
@@ -43,7 +44,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             SELECT u.nombre as colaborador, SUM(o.unidades) as total_unidades
             FROM ows_vertimiento o
             JOIN usuarios u ON o.usuario_id = u.id
-            WHERE o.operacion_id = ? AND o.actividad = 'VERTIMIENTO' AND MONTH(o.fecha) = MONTH(CURDATE()) AND YEAR(o.fecha) = YEAR(CURDATE())
+            WHERE o.operacion_id = ? AND o.actividad = 'VERTIMIENTO' AND o.fecha >= LAST_DAY(CURDATE() - INTERVAL 1 MONTH) + INTERVAL 1 DAY AND o.fecha < LAST_DAY(CURDATE()) + INTERVAL 1 DAY
             GROUP BY u.id
             ORDER BY total_unidades DESC
             LIMIT 5
@@ -160,6 +161,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
         .qr-list p { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #555; display: flex; align-items: center; }
         .qr-list p svg { color: #32cd32; margin-right: 6px; width: 16px; height: 16px; }
     </style>
+    <script src="../../public/js/ws-poll.js"></script>
 </head>
 <body>
 
@@ -492,7 +494,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
             inicializarGraficas();
             fetchData();
             
-            setInterval(fetchData, 5000); 
+            wsPoll(fetchData, <?= WS_POLL_MS ?>); 
             setInterval(checkAvisosHora, 1000); 
             setInterval(moverPantallaMicro, 30000); 
         });
